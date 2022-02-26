@@ -5,7 +5,12 @@ use bevy::{
 };
 use bevy_egui::EguiPlugin;
 use bevy_polyline::PolylinePlugin;
-use game::{assets::AssetsPlugin, player::PlayerPlugin, ui::UiPlugin, world::WorldPlugin};
+use game::{
+    assets::AssetsPlugin,
+    player::PlayerPlugin,
+    ui::{menu::MenuPlugin, UiPlugin},
+    world::WorldPlugin,
+};
 use heron::PhysicsPlugin;
 
 fn main() {
@@ -44,5 +49,6 @@ fn main() {
         .add_plugin(PlayerPlugin)
         .add_plugin(UiPlugin)
         .add_plugin(WorldPlugin)
+        .add_plugin(MenuPlugin)
         .run();
 }

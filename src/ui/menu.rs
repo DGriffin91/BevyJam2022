@@ -4,10 +4,7 @@ use bevy_egui::{egui, EguiContext};
 use crate::{
     assets::{custom_material::CustomMaterial, GameState},
     world::LevelAsset,
-    GameSetup,
 };
-
-use super::scoreboard::ScoreboardEvent;
 
 pub struct MenuPlugin;
 
@@ -19,20 +16,20 @@ impl Plugin for MenuPlugin {
 
 fn menu_ui(
     mut windows: ResMut<Windows>,
-    mut game_setup: ResMut<GameSetup>,
-    mut scoreboard: EventWriter<ScoreboardEvent>,
+    //mut game_setup: ResMut<GameSetup>,
+    //mut scoreboard: EventWriter<ScoreboardEvent>,
     mut egui_context: ResMut<EguiContext>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
     mut level_asset_query: Query<&mut LevelAsset>,
 ) {
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
-        egui::Window::new("materials").show(egui_context.ctx_mut(), |_ui| {
-            if let Ok(main) = level_asset_query.get_single_mut() {
+        egui::Window::new("materials").show(egui_context.ctx_mut(), |ui| {
+            if let Some(mut main) = level_asset_query.iter_mut().next() {
                 let mat_props = {
-                    // ui.collapsing("material properties", |ui| {
-                    //     main.material_properties.build_ui(ui);
-                    // });
+                    ui.collapsing("material properties", |ui| {
+                        main.material_properties.build_ui(ui);
+                    });
                     main.material_properties
                 };
                 for mat in level_asset_query.iter_mut() {
@@ -45,6 +42,7 @@ fn menu_ui(
                 }
             }
         });
+        /*
         egui::Window::new("Setup")
             .current_pos((10.0, 60.0))
             .show(egui_context.ctx_mut(), |ui| {
@@ -104,6 +102,6 @@ fn menu_ui(
                 // ui.add(
                 //     egui::Slider::new(&mut movement_settings.speed, 0.1..=100.0).text("Move Speed"),
                 // );
-            });
+            });*/
     }
 }

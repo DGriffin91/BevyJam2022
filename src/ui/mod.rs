@@ -4,6 +4,7 @@ use self::{fps::FpsPlugin, scoreboard::ScoreboardPlugin};
 
 // pub mod menu;
 pub mod fps;
+pub mod menu;
 pub mod scoreboard;
 
 pub struct UiPlugin;
