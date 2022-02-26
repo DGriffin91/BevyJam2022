@@ -26,7 +26,7 @@ pub fn get_sampler(render_device: &mut Res<RenderDevice>, address_mode: AddressM
     render_device.create_sampler(&sampler_descriptor)
 }
 
-pub fn get_image_texture_cube(
+pub fn _get_image_texture_cube(
     gpu_images: &RenderAssets<Image>,
     texture: &Handle<Image>,
 ) -> Option<TextureView> {

@@ -4,7 +4,7 @@ use bevy_egui::{egui, EguiContext};
 use crate::{
     assets::{custom_material::CustomMaterial, GameState},
     world::LevelAsset,
-    GameSetup, Target,
+    GameSetup,
 };
 
 use super::scoreboard::ScoreboardEvent;
@@ -18,11 +18,8 @@ impl Plugin for MenuPlugin {
 }
 
 fn menu_ui(
-    mut commands: Commands,
     mut windows: ResMut<Windows>,
     mut game_setup: ResMut<GameSetup>,
-    target_query: Query<(Entity, &Target)>,
-    // mut movement_settings: ResMut<MovementSettings>,
     mut scoreboard: EventWriter<ScoreboardEvent>,
     mut egui_context: ResMut<EguiContext>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
@@ -30,7 +27,7 @@ fn menu_ui(
 ) {
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
-        egui::Window::new("materials").show(egui_context.ctx_mut(), |ui| {
+        egui::Window::new("materials").show(egui_context.ctx_mut(), |_ui| {
             if let Ok(main) = level_asset_query.get_single_mut() {
                 let mat_props = {
                     // ui.collapsing("material properties", |ui| {
@@ -55,9 +52,6 @@ fn menu_ui(
                     window.set_cursor_lock_mode(true);
                     window.set_cursor_visibility(false);
                     scoreboard.send(ScoreboardEvent::Reset);
-                    for (entity, _target) in target_query.iter() {
-                        commands.entity(entity).despawn()
-                    }
                 }
                 ui.label("Game Settings");
                 ui.add(

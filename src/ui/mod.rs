@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use self::{menu::MenuPlugin, scoreboard::ScoreboardPlugin};
+use self::scoreboard::ScoreboardPlugin;
 
-pub mod menu;
+// pub mod menu;
 pub mod scoreboard;
 
 pub struct UiPlugin;

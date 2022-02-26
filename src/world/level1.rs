@@ -3,7 +3,6 @@ use bevy::{
     pbr::{DirectionalLight, DirectionalLightBundle, MaterialMeshBundle},
     prelude::*,
 };
-use bevy_mod_raycast::{DefaultPluginState, RayCastMesh};
 
 use crate::{
     assets::{
@@ -11,7 +10,6 @@ use crate::{
         GameState, ImageAssets,
     },
     assets::{emissive_material::EmissiveMaterial, ModelAssets},
-    MyRaycastSet,
 };
 
 use super::LevelAsset;
@@ -31,8 +29,6 @@ fn setup_level_one(
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
     mut emissive_materials: ResMut<Assets<EmissiveMaterial>>,
 ) {
-    commands.insert_resource(DefaultPluginState::<MyRaycastSet>::default()); //.with_debug_cursor()
-
     let variation_texture = image_assets.detail.clone();
     let base_texture = image_assets.concrete.clone();
     let walls_texture = image_assets.concrete3.clone();
@@ -148,7 +144,6 @@ fn setup_level_one(
                 material: material.clone(),
                 ..Default::default()
             })
-            .insert(RayCastMesh::<MyRaycastSet>::default())
             .insert(LevelAsset {
                 material_properties,
                 material_handle: material,

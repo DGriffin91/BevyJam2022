@@ -1,9 +1,6 @@
 use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
-use bevy_mod_raycast::RayCastSource;
-
-use crate::MyRaycastSet;
 
 /// Contains everything needed to add first-person fly camera behavior to your game
 pub struct PlayerPlugin;
@@ -55,9 +52,11 @@ impl Default for MovementSettings {
     }
 }
 
-/// Used in queries when you want flycams and not other cameras
 #[derive(Component)]
-pub struct FlyCam;
+struct Player;
+
+#[derive(Component)]
+struct PlayerCam;
 
 /// Grabs/ungrabs mouse cursor
 fn toggle_grab_cursor(window: &mut Window) {
@@ -68,13 +67,17 @@ fn toggle_grab_cursor(window: &mut Window) {
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(mut commands: Commands) {
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
-            transform: Transform::from_xyz(-20.0, 3.0, 0.0)
-                .looking_at(Vec3::ZERO + Vec3::new(0.0, 0.0, 5.0), Vec3::Y),
-            ..Default::default()
-        })
-        .insert(FlyCam)
-        .insert(RayCastSource::<MyRaycastSet>::new_transform_empty());
+        .spawn_bundle((Transform::default(), GlobalTransform::default()))
+        .insert(Player)
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(PerspectiveCameraBundle {
+                    transform: Transform::from_xyz(-20.0, 3.0, 0.0)
+                        .looking_at(Vec3::ZERO + Vec3::new(0.0, 0.0, 5.0), Vec3::Y),
+                    ..Default::default()
+                })
+                .insert(PlayerCam);
+        });
 
     commands.spawn_bundle(ButtonBundle {
         style: Style {
@@ -94,11 +97,11 @@ fn player_move(
     time: Res<Time>,
     windows: Res<Windows>,
     settings: Res<MovementSettings>,
-    mut query: Query<(&FlyCam, &mut Transform)>,
+    mut query: Query<&mut Transform, With<Player>>,
 ) {
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
-        for (_camera, mut transform) in query.iter_mut() {
+        for mut transform in query.iter_mut() {
             let mut velocity = Vec3::ZERO;
             let local_z = transform.local_z();
             let local_z_y = if settings.lock_y { 0.0 } else { local_z.y };
@@ -135,12 +138,12 @@ fn player_fire(
     windows: Res<Windows>,
     mut ev_fire: EventWriter<FireEvent>,
     mouse_button_input: Res<Input<MouseButton>>,
-    mut query: Query<(&FlyCam, &mut Transform)>,
+    query: Query<&Transform, With<Player>>,
 ) {
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
         if mouse_button_input.just_pressed(MouseButton::Left) {
-            for (_camera, transform) in query.iter_mut() {
+            for transform in query.iter() {
                 ev_fire.send(FireEvent {
                     transform: *transform,
                     release: false,
@@ -148,7 +151,7 @@ fn player_fire(
             }
         }
         if mouse_button_input.just_released(MouseButton::Left) {
-            for (_camera, transform) in query.iter_mut() {
+            for transform in query.iter() {
                 ev_fire.send(FireEvent {
                     transform: *transform,
                     release: true,
@@ -177,12 +180,12 @@ fn player_look(
     windows: Res<Windows>,
     mut state: ResMut<InputState>,
     motion: Res<Events<MouseMotion>>,
-    mut camera_query: Query<&mut Transform, With<FlyCam>>,
+    mut query: Query<&mut Transform, With<PlayerCam>>,
 ) {
     let window = windows.get_primary().unwrap();
     let mut pitch = state.pitch;
     let mut yaw = state.yaw;
-    for mut transform in camera_query.iter_mut() {
+    for mut transform in query.iter_mut() {
         for ev in state.reader_motion.iter(&motion) {
             if window.is_focused() && window.cursor_locked() {
                 // Using smallest of height or width ensures equal vertical and horizontal sensitivity
