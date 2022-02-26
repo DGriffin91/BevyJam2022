@@ -2,6 +2,14 @@ use bevy::{
     math::{EulerRot, Quat, Vec3},
     pbr::{DirectionalLight, DirectionalLightBundle, MaterialMeshBundle},
     prelude::*,
+    render::mesh::{Indices, VertexAttributeValues},
+};
+use heron::{
+    rapier_plugin::{
+        nalgebra::Point3,
+        rapier3d::{math::Real, prelude::ColliderBuilder},
+    },
+    CollisionShape, CustomCollisionShape, PhysicMaterial, RigidBody,
 };
 
 use crate::{
@@ -18,12 +26,48 @@ pub struct LevelOnePlugin;
 
 impl Plugin for LevelOnePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_level_one));
+        app.add_system_set(
+            SystemSet::on_enter(GameState::Playing)
+                .with_system(setup_level_one)
+                .with_system(spawn_demo_cubes),
+        );
+    }
+}
+
+fn spawn_demo_cubes(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let mesh = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
+    let material = materials.add(StandardMaterial {
+        base_color: Color::PINK,
+        ..Default::default()
+    });
+
+    for i in 0..10 {
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: mesh.clone(),
+                material: material.clone(),
+                transform: Transform::from_xyz(0.0, i as f32 * 6.0 + 5.0, -10.0),
+                ..Default::default()
+            })
+            .insert(RigidBody::Dynamic)
+            .insert(CollisionShape::Cuboid {
+                half_extends: Vec3::new(0.5, 0.5, 0.5),
+                border_radius: None,
+            })
+            .insert(PhysicMaterial {
+                restitution: 0.7,
+                ..Default::default()
+            });
     }
 }
 
 fn setup_level_one(
     mut commands: Commands,
+    mesh_assets: Res<Assets<Mesh>>,
     image_assets: Res<ImageAssets>,
     model_assets: Res<ModelAssets>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
@@ -91,6 +135,7 @@ fn setup_level_one(
         },
         directional_light_blend: 0.6,
     };
+
     let skybox_model = model_assets.level1_sky_box.clone();
     let skybox_texture = image_assets.level1_sky_box.clone();
     commands.spawn().insert_bundle(MaterialMeshBundle {
@@ -136,6 +181,29 @@ fn setup_level_one(
             ],
         });
 
+        let mesh = mesh_assets.get(model.clone()).unwrap();
+
+        let vertices: Vec<Point3<Real>> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+            None => panic!("Mesh does not contain vertex positions"),
+            Some(vertex_values) => match &vertex_values {
+                VertexAttributeValues::Float32x3(positions) => positions
+                    .into_iter()
+                    .map(|[x, y, z]| Point3::new(*x, *y, *z))
+                    .collect(),
+                _ => panic!("Unexpected types in {:?}", Mesh::ATTRIBUTE_POSITION),
+            },
+        };
+
+        let indices: Vec<_> = match mesh.indices().unwrap() {
+            Indices::U16(_) => {
+                panic!("expected u32 indices");
+            }
+            Indices::U32(indices) => indices
+                .chunks(3)
+                .map(|chunk| [chunk[0], chunk[1], chunk[2]])
+                .collect(),
+        };
+
         commands
             .spawn()
             .insert_bundle(MaterialMeshBundle {
@@ -143,6 +211,10 @@ fn setup_level_one(
                 transform: Transform::from_xyz(0.0, 0.0, 0.0),
                 material: material.clone(),
                 ..Default::default()
+            })
+            .insert(RigidBody::Static)
+            .insert(CollisionShape::Custom {
+                shape: CustomCollisionShape::new(ColliderBuilder::trimesh(vertices, indices)),
             })
             .insert(LevelAsset {
                 material_properties,
