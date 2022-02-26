@@ -1,38 +1,38 @@
 use bevy::{
     math::{EulerRot, Quat, Vec3},
     pbr::{DirectionalLight, DirectionalLightBundle, MaterialMeshBundle},
-    prelude::{
-        AssetServer, Assets, Color, Commands, OrthographicProjection, Res, ResMut, Transform,
-    },
+    prelude::*,
 };
-use bevy_mod_raycast::{DefaultPluginState, RayCastMesh};
 
 use crate::{
-    custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp, MaterialTexture},
-    emissive_material::EmissiveMaterial,
-    LevelAsset, MyRaycastSet,
+    assets::{
+        custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp},
+        GameState, ImageAssets,
+    },
+    assets::{emissive_material::EmissiveMaterial, ModelAssets},
 };
 
-pub fn setup(
+use super::LevelAsset;
+
+pub struct LevelOnePlugin;
+
+impl Plugin for LevelOnePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_level_one));
+    }
+}
+
+fn setup_level_one(
     mut commands: Commands,
+    image_assets: Res<ImageAssets>,
+    model_assets: Res<ModelAssets>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
     mut emissive_materials: ResMut<Assets<EmissiveMaterial>>,
-    asset_server: Res<AssetServer>,
 ) {
-    commands.insert_resource(DefaultPluginState::<MyRaycastSet>::default()); //.with_debug_cursor()
-
-    let variation_texture =
-        MaterialTexture::new(&asset_server, "textures/detail.jpg", "variation_texture");
-    let base_texture = MaterialTexture::new(&asset_server, "textures/concrete.jpg", "base_texture");
-
-    let walls_texture =
-        MaterialTexture::new(&asset_server, "textures/concrete3.jpg", "walls_texture");
-
-    let reflection_texture = MaterialTexture::new(
-        &asset_server,
-        "textures/reflection.jpg",
-        "reflection_texture",
-    );
+    let variation_texture = image_assets.detail.clone();
+    let base_texture = image_assets.concrete.clone();
+    let walls_texture = image_assets.concrete3.clone();
+    let reflection_texture = image_assets.reflection.clone();
 
     let material_properties = MaterialProperties {
         lightmap: MaterialSetProp {
@@ -91,10 +91,10 @@ pub fn setup(
         },
         directional_light_blend: 0.6,
     };
-    let model = asset_server.load("models/level1/sky_box.gltf#Mesh0/Primitive0");
-    let skybox_texture = asset_server.load("textures/level1/bake/sky_box.jpg");
+    let skybox_model = model_assets.level1_sky_box.clone();
+    let skybox_texture = image_assets.level1_sky_box.clone();
     commands.spawn().insert_bundle(MaterialMeshBundle {
-        mesh: model,
+        mesh: skybox_model,
         transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::new(10.0, 10.0, 10.0)),
         material: emissive_materials.add(EmissiveMaterial {
             emissive: Color::WHITE,
@@ -103,19 +103,28 @@ pub fn setup(
         ..Default::default()
     });
 
-    for name in [
-        "pillars",
-        "spheres",
-        "large_ceiling_supports",
-        "walls",
-        "spheres_base",
+    for (model, lightbake) in [
+        (
+            model_assets.level1_pillars.clone(),
+            image_assets.level1_pillars.clone(),
+        ),
+        (
+            model_assets.level1_spheres.clone(),
+            image_assets.level1_spheres.clone(),
+        ),
+        (
+            model_assets.level1_large_ceiling_supports.clone(),
+            image_assets.level1_large_ceiling_supports.clone(),
+        ),
+        (
+            model_assets.level1_walls.clone(),
+            image_assets.level1_walls.clone(),
+        ),
+        (
+            model_assets.level1_spheres_base.clone(),
+            image_assets.level1_spheres_base.clone(),
+        ),
     ] {
-        let model = asset_server.load(&format!("models/level1/{}.gltf#Mesh0/Primitive0", name));
-        let lightbake = MaterialTexture::new(
-            &asset_server,
-            &format!("textures/level1/bake/{}.jpg", name),
-            name,
-        );
         let material = custom_materials.add(CustomMaterial {
             material_properties,
             textures: [
@@ -126,6 +135,7 @@ pub fn setup(
                 walls_texture.clone(),
             ],
         });
+
         commands
             .spawn()
             .insert_bundle(MaterialMeshBundle {
@@ -134,7 +144,6 @@ pub fn setup(
                 material: material.clone(),
                 ..Default::default()
             })
-            .insert(RayCastMesh::<MyRaycastSet>::default())
             .insert(LevelAsset {
                 material_properties,
                 material_handle: material,
@@ -221,5 +230,5 @@ pub fn setup(
     //}
 
     // Tell the asset server to watch for asset changes on disk:
-    asset_server.watch_for_changes().unwrap();
+    // asset_server.watch_for_changes().unwrap();
 }

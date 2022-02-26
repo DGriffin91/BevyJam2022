@@ -1,9 +1,28 @@
 use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
-use bevy_mod_raycast::RayCastSource;
 
-use crate::MyRaycastSet;
+use crate::assets::GameState;
+
+/// Contains everything needed to add first-person fly camera behavior to your game
+pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<InputState>()
+            .init_resource::<MovementSettings>()
+            .add_event::<FireEvent>()
+            .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_player))
+            .add_system_set(
+                SystemSet::on_update(GameState::Playing)
+                    .with_system(player_move)
+                    .with_system(player_look)
+                    .with_system(player_fire)
+                    .with_system(cursor_grab)
+                    .with_system(player_change_speed),
+            );
+    }
+}
 
 #[derive(Debug)]
 pub struct FireEvent {
@@ -30,36 +49,37 @@ pub struct MovementSettings {
 impl Default for MovementSettings {
     fn default() -> Self {
         Self {
-            sensitivity: 0.000002,
-            speed: 12.,
-            run_multiplier: 3.0,
+            sensitivity: 0.03, // default: 0.00012
+            speed: 18.0,       // default: 12.0
             lock_y: true,
+            run_multiplier: 1.8,
         }
     }
 }
 
-/// Used in queries when you want flycams and not other cameras
 #[derive(Component)]
-pub struct FlyCam;
+struct Player;
 
-/// Grabs/ungrabs mouse cursor
-fn toggle_grab_cursor(window: &mut Window) {
-    window.set_cursor_lock_mode(!window.cursor_locked());
-    window.set_cursor_visibility(!window.cursor_visible());
-}
+#[derive(Component)]
+struct PlayerCam;
 
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(mut commands: Commands) {
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
-            transform: Transform::from_xyz(-20.0, 3.0, 0.0)
-                .looking_at(Vec3::ZERO + Vec3::new(0.0, 0.0, 5.0), Vec3::Y),
-            ..Default::default()
-        })
-        .insert(FlyCam)
-        .insert(RayCastSource::<MyRaycastSet>::new_transform_empty());
+        .spawn_bundle((
+            Transform::from_xyz(0.0, 0.0, 0.0),
+            GlobalTransform::default(),
+        ))
+        .insert(Player)
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(PerspectiveCameraBundle {
+                    transform: Transform::from_xyz(0.0, 3.0, 0.0),
+                    ..Default::default()
+                })
+                .insert(PlayerCam);
+        });
 
-    commands.spawn_bundle(UiCameraBundle::default());
     commands.spawn_bundle(ButtonBundle {
         style: Style {
             size: Size::new(Val::Px(4.0), Val::Px(4.0)),
@@ -78,11 +98,11 @@ fn player_move(
     time: Res<Time>,
     windows: Res<Windows>,
     settings: Res<MovementSettings>,
-    mut query: Query<(&FlyCam, &mut Transform)>,
+    mut query: Query<&mut Transform, With<Player>>,
 ) {
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
-        for (_camera, mut transform) in query.iter_mut() {
+        for mut transform in query.iter_mut() {
             let mut velocity = Vec3::ZERO;
             let local_z = transform.local_z();
             let local_z_y = if settings.lock_y { 0.0 } else { local_z.y };
@@ -115,16 +135,49 @@ fn player_move(
     }
 }
 
+/// Handles looking around if cursor is locked
+fn player_look(
+    settings: Res<MovementSettings>,
+    windows: Res<Windows>,
+    mut state: ResMut<InputState>,
+    motion: Res<Events<MouseMotion>>,
+    mut query: QuerySet<(
+        QueryState<&mut Transform, With<Player>>,
+        QueryState<&mut Transform, With<PlayerCam>>,
+    )>,
+) {
+    let window = windows.get_primary().unwrap();
+    if window.is_focused() && window.cursor_locked() {
+        // Update InputState
+        for ev in state.reader_motion.iter(&motion) {
+            state.pitch -= (settings.sensitivity * ev.delta.y).to_radians();
+            state.yaw -= (settings.sensitivity * ev.delta.x).to_radians();
+
+            state.pitch = state.pitch.clamp(-1.54, 1.54);
+        }
+
+        // Update player yaw
+        for mut transform in query.q0().iter_mut() {
+            transform.rotation = Quat::from_axis_angle(Vec3::Y, state.yaw);
+        }
+
+        // Update camera pitch
+        for mut transform in query.q1().iter_mut() {
+            transform.rotation = Quat::from_axis_angle(Vec3::X, state.pitch);
+        }
+    }
+}
+
 fn player_fire(
     windows: Res<Windows>,
     mut ev_fire: EventWriter<FireEvent>,
     mouse_button_input: Res<Input<MouseButton>>,
-    mut query: Query<(&FlyCam, &mut Transform)>,
+    query: Query<&Transform, With<Player>>,
 ) {
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
         if mouse_button_input.just_pressed(MouseButton::Left) {
-            for (_camera, transform) in query.iter_mut() {
+            for transform in query.iter() {
                 ev_fire.send(FireEvent {
                     transform: *transform,
                     release: false,
@@ -132,7 +185,7 @@ fn player_fire(
             }
         }
         if mouse_button_input.just_released(MouseButton::Left) {
-            for (_camera, transform) in query.iter_mut() {
+            for transform in query.iter() {
                 ev_fire.send(FireEvent {
                     transform: *transform,
                     release: true,
@@ -155,68 +208,15 @@ fn player_change_speed(
     }
 }
 
-/// Handles looking around if cursor is locked
-fn player_look(
-    settings: Res<MovementSettings>,
-    windows: Res<Windows>,
-    mut state: ResMut<InputState>,
-    motion: Res<Events<MouseMotion>>,
-    mut query: Query<(&FlyCam, &mut Transform)>,
-) {
-    let window = windows.get_primary().unwrap();
-    let mut pitch = state.pitch;
-    let mut yaw = state.yaw;
-    for (_camera, mut transform) in query.iter_mut() {
-        for ev in state.reader_motion.iter(&motion) {
-            if window.is_focused() && window.cursor_locked() {
-                // Using smallest of height or width ensures equal vertical and horizontal sensitivity
-                // let window_scale = window.height().min(window.width());
-
-                pitch -= (settings.sensitivity * ev.delta.y).to_radians(); //* window_scale
-                yaw -= (settings.sensitivity * ev.delta.x).to_radians(); //* window_scale
-            }
-
-            pitch = pitch.clamp(-1.54, 1.54);
-
-            // Order is important to prevent unintended roll
-            transform.rotation =
-                Quat::from_axis_angle(Vec3::Y, yaw) * Quat::from_axis_angle(Vec3::X, pitch);
-        }
-    }
-    state.pitch = pitch;
-    state.yaw = yaw;
-}
-
 fn cursor_grab(keys: Res<Input<KeyCode>>, mut windows: ResMut<Windows>) {
-    let window = windows.get_primary_mut().unwrap();
     if keys.just_pressed(KeyCode::Escape) {
+        let window = windows.get_primary_mut().unwrap();
         toggle_grab_cursor(window);
     }
 }
 
-/// Contains everything needed to add first-person fly camera behavior to your game
-pub struct PlayerPlugin;
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<InputState>()
-            .init_resource::<MovementSettings>()
-            .add_startup_system(setup_player)
-            .add_system(player_move)
-            .add_system(player_look)
-            .add_system(player_fire)
-            .add_system(cursor_grab)
-            .add_system(player_change_speed);
-    }
-}
-
-/// Same as `PlayerPlugin` but does not spawn a camera
-pub struct NoCameraPlayerPlugin;
-impl Plugin for NoCameraPlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<InputState>()
-            .init_resource::<MovementSettings>()
-            .add_system(player_move)
-            .add_system(player_look)
-            .add_system(cursor_grab);
-    }
+/// Grabs/ungrabs mouse cursor
+fn toggle_grab_cursor(window: &mut Window) {
+    window.set_cursor_lock_mode(!window.cursor_locked());
+    window.set_cursor_visibility(!window.cursor_visible());
 }
