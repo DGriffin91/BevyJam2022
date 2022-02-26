@@ -34,14 +34,15 @@ pub struct GpuEmissiveMaterial {
 }
 
 fn get_custom_sampler(render_device: &mut Res<RenderDevice>) -> Sampler {
-    let mut sampler_descriptor = SamplerDescriptor::default();
-
-    sampler_descriptor.address_mode_u = AddressMode::Repeat;
-    sampler_descriptor.address_mode_v = AddressMode::Repeat;
-    sampler_descriptor.mipmap_filter = FilterMode::Linear;
-    sampler_descriptor.mag_filter = FilterMode::Linear;
-    sampler_descriptor.min_filter = FilterMode::Linear;
-    sampler_descriptor.anisotropy_clamp = NonZeroU8::new(16);
+    let sampler_descriptor = SamplerDescriptor {
+        address_mode_u: AddressMode::Repeat,
+        address_mode_v: AddressMode::Repeat,
+        mipmap_filter: FilterMode::Linear,
+        mag_filter: FilterMode::Linear,
+        min_filter: FilterMode::Linear,
+        anisotropy_clamp: NonZeroU8::new(16),
+        ..Default::default()
+    };
 
     render_device.create_sampler(&sampler_descriptor)
 }

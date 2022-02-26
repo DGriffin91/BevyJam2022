@@ -105,13 +105,8 @@ fn player_move(
             }
 
             for key in keys.get_pressed() {
-                match key {
-                    KeyCode::LShift => {
-                        if moving_forward {
-                            run = settings.run_multiplier
-                        }
-                    }
-                    _ => (),
+                if key == &KeyCode::LShift && moving_forward {
+                    run = settings.run_multiplier
                 }
             }
 

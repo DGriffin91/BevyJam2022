@@ -36,13 +36,11 @@ pub fn create_debug_line(
         .spawn_bundle(PolylineBundle {
             polyline: polylines.add(Polyline {
                 vertices: vec![start, end],
-                ..Default::default()
             }),
             material: polyline_materials.add(PolylineMaterial {
                 width: 4.0,
                 color,
                 perspective: true,
-                ..Default::default()
             }),
             ..Default::default()
         })

@@ -11,9 +11,9 @@ mod material_util;
 mod planets;
 mod player_plugin;
 use bevy_egui::{egui, EguiContext, EguiPlugin};
-use bevy_mod_raycast::{DefaultPluginState, DefaultRaycastingPlugin, RayCastMesh, RayCastSource};
+use bevy_mod_raycast::{DefaultRaycastingPlugin, RayCastMesh, RayCastSource};
 use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial, PolylinePlugin};
-use custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp, MaterialTexture};
+use custom_material::{CustomMaterial, MaterialProperties};
 use draw_debug::clean_up_debug_lines;
 use emissive_material::EmissiveMaterial;
 use heron::PhysicsPlugin;
@@ -50,7 +50,6 @@ fn setup_player_entities(
         width: 4.0,
         color: Color::RED,
         perspective: true,
-        ..Default::default()
     });
     let polyline = polylines.add(Polyline {
         vertices: vec![Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)],
@@ -82,7 +81,7 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 TextSection {
                     value: "".to_string(),
                     style: TextStyle {
-                        font: font.clone(),
+                        font,
                         font_size: 32.0,
                         color: Color::rgb(0.9, 0.6, 0.6),
                     },
@@ -123,8 +122,8 @@ fn scoreboard_system(scoreboard: Res<Scoreboard>, mut query: Query<&mut Text>) {
             );
         }
     } else {
-        text.sections[0].value = format!("Fire To Start");
-        text.sections[1].value = format!("");
+        text.sections[0].value = "Fire To Start".to_string();
+        text.sections[1].value = String::new();
     }
 }
 
@@ -203,17 +202,15 @@ fn fire_event(
                 }
                 game_setup.is_firing = false;
                 continue;
+            } else if (time.time_since_startup().as_secs_f64() - game_setup.last_shot
+                < game_setup.fire_rate.into())
+                && !game_setup.trace_mode
+            {
+                game_setup.is_firing = false;
             } else {
-                if (time.time_since_startup().as_secs_f64() - game_setup.last_shot
-                    < game_setup.fire_rate.into())
-                    && !game_setup.trace_mode
-                {
-                    game_setup.is_firing = false;
-                } else {
-                    game_setup.is_firing = true;
-                    fired_this_time = true;
-                    game_setup.last_shot = time.time_since_startup().as_secs_f64();
-                }
+                game_setup.is_firing = true;
+                fired_this_time = true;
+                game_setup.last_shot = time.time_since_startup().as_secs_f64();
             }
         }
         if game_setup.is_firing && game_setup.trace_mode || fired_this_time {
@@ -372,7 +369,6 @@ fn menu_ui(
     mut egui_context: ResMut<EguiContext>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
     mut level_asset_query: Query<&mut LevelAsset>,
-    asset_server: Res<AssetServer>,
 ) {
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
@@ -382,7 +378,7 @@ fn menu_ui(
                     ui.collapsing("material properties", |ui| {
                         main.material_properties.build_ui(ui);
                     });
-                    main.material_properties.clone()
+                    main.material_properties
                 };
                 for mat in level_asset_query.iter_mut() {
                     if let Some(mat) = custom_materials.get_mut(&mat.material_handle) {
@@ -475,7 +471,7 @@ fn main() {
                 max_height: f32::INFINITY,
             },
             scale_factor_override: Some(1.),
-            //present_mode: PresentMode::Immediate,
+            // present_mode: PresentMode::Immediate,
             vsync: false,
             resizable: true,
             decorations: true,
