@@ -149,12 +149,18 @@ fn player_look(
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
         // Update InputState
+        // Not sure what changed in updating to a newer version of bevy that required this
+        // had error[E0499]: cannot borrow `state` as mutable more than once at a time
+        let mut pitch = state.pitch;
+        let mut yaw = state.yaw;
         for ev in state.reader_motion.iter(&motion) {
-            state.pitch -= (settings.sensitivity * ev.delta.y).to_radians();
-            state.yaw -= (settings.sensitivity * ev.delta.x).to_radians();
+            pitch -= (settings.sensitivity * ev.delta.y).to_radians();
+            yaw -= (settings.sensitivity * ev.delta.x).to_radians();
 
-            state.pitch = state.pitch.clamp(-1.54, 1.54);
+            pitch = pitch.clamp(-1.54, 1.54);
         }
+        state.pitch = pitch;
+        state.yaw = yaw;
 
         // Update player yaw
         for mut transform in query.q0().iter_mut() {

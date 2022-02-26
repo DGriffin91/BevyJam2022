@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    window::{WindowMode, WindowResizeConstraints},
+    window::{PresentMode, WindowMode, WindowResizeConstraints},
 };
 use game::GamePlugin;
 
@@ -17,7 +17,7 @@ fn main() {
                 ..Default::default()
             },
             scale_factor_override: Some(1.0),
-            vsync: false,
+            present_mode: PresentMode::Immediate,
             resizable: true,
             decorations: true,
             cursor_locked: true,
