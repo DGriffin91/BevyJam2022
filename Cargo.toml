@@ -5,22 +5,12 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.6", features = ["jpeg"] }
+bevy_asset_loader = "0.9"
 bevy_egui = "0.11"
 bevy_mod_raycast = "0.3"
 bevy_polyline = "0.1"
 heron = { version = "2.0", features = ["3d"] }
 rand = "0.8"
-
-# bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", features = [
-#   "jpeg",
-# ] }
-# bevy_polyline = { git = "https://github.com/ForesightMiningSoftwareCorporation/bevy_polyline", branch = "main" }
-# bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "master" }
-# rand = "0.8"
-# bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "main" }
-# heron = { git = "https://github.com/DGriffin91/heron", branch = "main", features = [
-#   "3d",
-# ] }
 
 # Enable only a small amount of optimization in debug mode
 [profile.dev]

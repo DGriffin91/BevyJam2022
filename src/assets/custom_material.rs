@@ -1,5 +1,3 @@
-use std::ops::RangeInclusive;
-
 use bevy::{
     ecs::system::{lifetimeless::SRes, SystemParamItem},
     pbr::MaterialPipeline,
@@ -18,12 +16,11 @@ use bevy::{
     },
 };
 
-use bevy_egui::egui;
-
 use crate::{
-    material_util::get_sampler, sampler_binding, sampler_group_layout, texture_binding,
-    texture_group_layout, texture_view,
+    sampler_binding, sampler_group_layout, texture_binding, texture_group_layout, texture_view,
 };
+
+use super::material_util::get_sampler;
 
 #[derive(Debug, Clone, Copy, AsStd140)]
 pub struct MaterialSetProp {
@@ -33,33 +30,33 @@ pub struct MaterialSetProp {
     pub blend: f32,
 }
 
-pub fn log_slider<Num: egui::emath::Numeric>(
-    ui: &mut egui::Ui,
-    value: &mut Num,
-    range: RangeInclusive<Num>,
-    text: &str,
-) {
-    ui.add(egui::Slider::new(value, range).logarithmic(true).text(text));
-}
+// pub fn log_slider<Num: egui::emath::Numeric>(
+//     ui: &mut egui::Ui,
+//     value: &mut Num,
+//     range: RangeInclusive<Num>,
+//     text: &str,
+// ) {
+//     ui.add(egui::Slider::new(value, range).logarithmic(true).text(text));
+// }
 
-pub fn slider<Num: egui::emath::Numeric>(
-    ui: &mut egui::Ui,
-    value: &mut Num,
-    range: RangeInclusive<Num>,
-    text: &str,
-) {
-    ui.add(egui::Slider::new(value, range).text(text));
-}
+// pub fn slider<Num: egui::emath::Numeric>(
+//     ui: &mut egui::Ui,
+//     value: &mut Num,
+//     range: RangeInclusive<Num>,
+//     text: &str,
+// ) {
+//     ui.add(egui::Slider::new(value, range).text(text));
+// }
 
-impl MaterialSetProp {
-    pub fn build_ui(&mut self, ui: &mut egui::Ui, label: &str) {
-        ui.label(label);
-        log_slider(ui, &mut self.scale, 0.0..=100.0, "scale");
-        log_slider(ui, &mut self.contrast, 0.0..=10.0, "contrast");
-        log_slider(ui, &mut self.brightness, 0.0..=40.0, "brightness");
-        log_slider(ui, &mut self.blend, 0.0..=1.0, "blend");
-    }
-}
+// impl MaterialSetProp {
+//     pub fn build_ui(&mut self, ui: &mut egui::Ui, label: &str) {
+//         ui.label(label);
+//         log_slider(ui, &mut self.scale, 0.0..=100.0, "scale");
+//         log_slider(ui, &mut self.contrast, 0.0..=10.0, "contrast");
+//         log_slider(ui, &mut self.brightness, 0.0..=40.0, "brightness");
+//         log_slider(ui, &mut self.blend, 0.0..=1.0, "blend");
+//     }
+// }
 
 #[derive(Debug, Clone, Copy, AsStd140)]
 pub struct MaterialProperties {
@@ -73,80 +70,70 @@ pub struct MaterialProperties {
     pub reflection_mask: MaterialSetProp,
     pub mist: MaterialSetProp,
     pub directional_light_blend: f32,
-    //pub directional_light_color: Vec3,
+    // pub directional_light_color: Vec3,
 }
 
-impl MaterialProperties {
-    pub fn build_ui(&mut self, ui: &mut egui::Ui) {
-        if ui.button("Debug Print").clicked() {
-            dbg!(&self);
-        }
-        self.lightmap.build_ui(ui, "lightmap");
-        self.base_a.build_ui(ui, "base_a");
-        self.base_b.build_ui(ui, "base_b");
-        self.vary_a.build_ui(ui, "vary_a");
-        self.vary_b.build_ui(ui, "vary_b");
-        self.reflection.build_ui(ui, "reflection");
-        self.reflection_mask.build_ui(ui, "reflection_mask");
-        self.walls.build_ui(ui, "walls");
-        self.mist.build_ui(ui, "mist");
-        ui.label("-------------");
-        ui.add(
-            egui::Slider::new(&mut self.directional_light_blend, 0.0..=5.0)
-                .text("directional_light_blend"),
-        );
-    }
-}
+// impl MaterialProperties {
+//     pub fn build_ui(&mut self, ui: &mut egui::Ui) {
+//         if ui.button("Debug Print").clicked() {
+//             dbg!(&self);
+//         }
+//         self.lightmap.build_ui(ui, "lightmap");
+//         self.base_a.build_ui(ui, "base_a");
+//         self.base_b.build_ui(ui, "base_b");
+//         self.vary_a.build_ui(ui, "vary_a");
+//         self.vary_b.build_ui(ui, "vary_b");
+//         self.reflection.build_ui(ui, "reflection");
+//         self.reflection_mask.build_ui(ui, "reflection_mask");
+//         self.walls.build_ui(ui, "walls");
+//         self.mist.build_ui(ui, "mist");
+//         ui.label("-------------");
+//         ui.add(
+//             egui::Slider::new(&mut self.directional_light_blend, 0.0..=5.0)
+//                 .text("directional_light_blend"),
+//         );
+//     }
+// }
 
-#[derive(Debug, Clone)]
-pub struct MaterialTexture {
-    pub handle: Handle<Image>,
-    pub path: String,
-    pub name: String,
-}
+// #[derive(Debug, Clone)]
+// pub struct MaterialTexture {
+//     pub handle: Handle<Image>,
+// }
 
-impl MaterialTexture {
-    pub fn build_ui(&mut self, ui: &mut egui::Ui, asset_server: &Res<AssetServer>) {
-        ui.label(&self.name);
-        ui.horizontal(|ui| {
-            ui.text_edit_singleline(&mut self.path);
-            if ui.button("LOAD").clicked() {
-                self.handle = asset_server.load(&self.path);
-            }
-        });
-    }
-
-    pub fn new(asset_server: &Res<AssetServer>, path: &str, name: &str) -> Self {
-        MaterialTexture {
-            handle: asset_server.load(path),
-            path: String::from(path),
-            name: String::from(name),
-        }
-    }
-}
+// impl MaterialTexture {
+// pub fn build_ui(&mut self, ui: &mut egui::Ui, asset_server: &Res<AssetServer>) {
+//     ui.label(&self.name);
+//     ui.horizontal(|ui| {
+//         ui.text_edit_singleline(&mut self.path);
+//         if ui.button("LOAD").clicked() {
+//             self.handle = asset_server.load(&self.path);
+//         }
+//     });
+// }
+// }
 
 // This is the struct that will be passed to your shader
 #[derive(Debug, Clone, TypeUuid)]
 #[uuid = "4ee9c361-1124-4113-890e-197d82b00123"]
 pub struct CustomMaterial {
     pub material_properties: MaterialProperties,
-    pub textures: [MaterialTexture; 5],
+    pub textures: [Handle<Image>; 5],
 }
 
-impl CustomMaterial {
-    pub fn build_ui(&mut self, ui: &mut egui::Ui, asset_server: &Res<AssetServer>) {
-        //self.material_properties.build_ui(ui);
-        ui.label("CustomMaterial");
-        if ui.button("Print Paths").clicked() {
-            for texture in &self.textures {
-                println!("{}", texture.path);
-            }
-        }
-        for texture in &mut self.textures {
-            texture.build_ui(ui, asset_server)
-        }
-    }
-}
+// impl CustomMaterial {
+//     pub fn build_ui(&mut self, ui: &mut egui::Ui, asset_server: &Res<AssetServer>) {
+//         //self.material_properties.build_ui(ui);
+//         ui.label("CustomMaterial");
+//         if ui.button("Print Paths").clicked() {
+//             for texture in &self.textures {
+//                 println!("{}", texture.path);
+//             }
+//         }
+//         for texture in &mut self.textures {
+//             texture.build_ui(ui, asset_server)
+//         }
+//     }
+// }
 
 #[derive(Clone)]
 pub struct GpuCustomMaterial {
@@ -178,11 +165,11 @@ impl RenderAsset for CustomMaterial {
         });
 
         let texviews = [
-            texture_view!(&material.textures[0].handle, gpu_images, material),
-            texture_view!(&material.textures[1].handle, gpu_images, material),
-            texture_view!(&material.textures[2].handle, gpu_images, material),
-            texture_view!(&material.textures[3].handle, gpu_images, material),
-            texture_view!(&material.textures[4].handle, gpu_images, material),
+            texture_view!(&material.textures[0], gpu_images, material),
+            texture_view!(&material.textures[1], gpu_images, material),
+            texture_view!(&material.textures[2], gpu_images, material),
+            texture_view!(&material.textures[3], gpu_images, material),
+            texture_view!(&material.textures[4], gpu_images, material),
         ];
 
         let samplers = [

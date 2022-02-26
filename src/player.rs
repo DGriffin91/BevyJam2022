@@ -5,6 +5,23 @@ use bevy_mod_raycast::RayCastSource;
 
 use crate::MyRaycastSet;
 
+/// Contains everything needed to add first-person fly camera behavior to your game
+pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<InputState>()
+            .init_resource::<MovementSettings>()
+            .add_event::<FireEvent>()
+            .add_startup_system(setup_player)
+            .add_system(player_move)
+            .add_system(player_look)
+            .add_system(player_fire)
+            .add_system(cursor_grab)
+            .add_system(player_change_speed);
+    }
+}
+
 #[derive(Debug)]
 pub struct FireEvent {
     pub transform: Transform,
@@ -30,10 +47,10 @@ pub struct MovementSettings {
 impl Default for MovementSettings {
     fn default() -> Self {
         Self {
-            sensitivity: 0.000002,
-            speed: 12.,
-            run_multiplier: 3.0,
+            sensitivity: 0.03, // default: 0.00012
+            speed: 18.0,       // default: 12.0
             lock_y: true,
+            run_multiplier: 1.8,
         }
     }
 }
@@ -59,7 +76,6 @@ fn setup_player(mut commands: Commands) {
         .insert(FlyCam)
         .insert(RayCastSource::<MyRaycastSet>::new_transform_empty());
 
-    commands.spawn_bundle(UiCameraBundle::default());
     commands.spawn_bundle(ButtonBundle {
         style: Style {
             size: Size::new(Val::Px(4.0), Val::Px(4.0)),
@@ -161,12 +177,12 @@ fn player_look(
     windows: Res<Windows>,
     mut state: ResMut<InputState>,
     motion: Res<Events<MouseMotion>>,
-    mut query: Query<(&FlyCam, &mut Transform)>,
+    mut camera_query: Query<&mut Transform, With<FlyCam>>,
 ) {
     let window = windows.get_primary().unwrap();
     let mut pitch = state.pitch;
     let mut yaw = state.yaw;
-    for (_camera, mut transform) in query.iter_mut() {
+    for mut transform in camera_query.iter_mut() {
         for ev in state.reader_motion.iter(&motion) {
             if window.is_focused() && window.cursor_locked() {
                 // Using smallest of height or width ensures equal vertical and horizontal sensitivity
@@ -188,35 +204,8 @@ fn player_look(
 }
 
 fn cursor_grab(keys: Res<Input<KeyCode>>, mut windows: ResMut<Windows>) {
-    let window = windows.get_primary_mut().unwrap();
     if keys.just_pressed(KeyCode::Escape) {
+        let window = windows.get_primary_mut().unwrap();
         toggle_grab_cursor(window);
-    }
-}
-
-/// Contains everything needed to add first-person fly camera behavior to your game
-pub struct PlayerPlugin;
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<InputState>()
-            .init_resource::<MovementSettings>()
-            .add_startup_system(setup_player)
-            .add_system(player_move)
-            .add_system(player_look)
-            .add_system(player_fire)
-            .add_system(cursor_grab)
-            .add_system(player_change_speed);
-    }
-}
-
-/// Same as `PlayerPlugin` but does not spawn a camera
-pub struct NoCameraPlayerPlugin;
-impl Plugin for NoCameraPlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<InputState>()
-            .init_resource::<MovementSettings>()
-            .add_system(player_move)
-            .add_system(player_look)
-            .add_system(cursor_grab);
     }
 }
