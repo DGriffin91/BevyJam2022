@@ -2,6 +2,8 @@ use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
 
+use crate::assets::GameState;
+
 /// Contains everything needed to add first-person fly camera behavior to your game
 pub struct PlayerPlugin;
 
@@ -10,12 +12,15 @@ impl Plugin for PlayerPlugin {
         app.init_resource::<InputState>()
             .init_resource::<MovementSettings>()
             .add_event::<FireEvent>()
-            .add_startup_system(setup_player)
-            .add_system(player_move)
-            .add_system(player_look)
-            .add_system(player_fire)
-            .add_system(cursor_grab)
-            .add_system(player_change_speed);
+            .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_player))
+            .add_system_set(
+                SystemSet::on_update(GameState::Playing)
+                    .with_system(player_move)
+                    .with_system(player_look)
+                    .with_system(player_fire)
+                    .with_system(cursor_grab)
+                    .with_system(player_change_speed),
+            );
     }
 }
 
@@ -58,22 +63,18 @@ struct Player;
 #[derive(Component)]
 struct PlayerCam;
 
-/// Grabs/ungrabs mouse cursor
-fn toggle_grab_cursor(window: &mut Window) {
-    window.set_cursor_lock_mode(!window.cursor_locked());
-    window.set_cursor_visibility(!window.cursor_visible());
-}
-
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(mut commands: Commands) {
     commands
-        .spawn_bundle((Transform::default(), GlobalTransform::default()))
+        .spawn_bundle((
+            Transform::from_xyz(0.0, 0.0, 0.0),
+            GlobalTransform::default(),
+        ))
         .insert(Player)
         .with_children(|parent| {
             parent
                 .spawn_bundle(PerspectiveCameraBundle {
-                    transform: Transform::from_xyz(-20.0, 3.0, 0.0)
-                        .looking_at(Vec3::ZERO + Vec3::new(0.0, 0.0, 5.0), Vec3::Y),
+                    transform: Transform::from_xyz(0.0, 3.0, 0.0),
                     ..Default::default()
                 })
                 .insert(PlayerCam);
@@ -134,6 +135,39 @@ fn player_move(
     }
 }
 
+/// Handles looking around if cursor is locked
+fn player_look(
+    settings: Res<MovementSettings>,
+    windows: Res<Windows>,
+    mut state: ResMut<InputState>,
+    motion: Res<Events<MouseMotion>>,
+    mut query: QuerySet<(
+        QueryState<&mut Transform, With<Player>>,
+        QueryState<&mut Transform, With<PlayerCam>>,
+    )>,
+) {
+    let window = windows.get_primary().unwrap();
+    if window.is_focused() && window.cursor_locked() {
+        // Update InputState
+        for ev in state.reader_motion.iter(&motion) {
+            state.pitch -= (settings.sensitivity * ev.delta.y).to_radians();
+            state.yaw -= (settings.sensitivity * ev.delta.x).to_radians();
+
+            state.pitch = state.pitch.clamp(-1.54, 1.54);
+        }
+
+        // Update player yaw
+        for mut transform in query.q0().iter_mut() {
+            transform.rotation = Quat::from_axis_angle(Vec3::Y, state.yaw);
+        }
+
+        // Update camera pitch
+        for mut transform in query.q1().iter_mut() {
+            transform.rotation = Quat::from_axis_angle(Vec3::X, state.pitch);
+        }
+    }
+}
+
 fn player_fire(
     windows: Res<Windows>,
     mut ev_fire: EventWriter<FireEvent>,
@@ -174,41 +208,15 @@ fn player_change_speed(
     }
 }
 
-/// Handles looking around if cursor is locked
-fn player_look(
-    settings: Res<MovementSettings>,
-    windows: Res<Windows>,
-    mut state: ResMut<InputState>,
-    motion: Res<Events<MouseMotion>>,
-    mut query: Query<&mut Transform, With<PlayerCam>>,
-) {
-    let window = windows.get_primary().unwrap();
-    let mut pitch = state.pitch;
-    let mut yaw = state.yaw;
-    for mut transform in query.iter_mut() {
-        for ev in state.reader_motion.iter(&motion) {
-            if window.is_focused() && window.cursor_locked() {
-                // Using smallest of height or width ensures equal vertical and horizontal sensitivity
-                // let window_scale = window.height().min(window.width());
-
-                pitch -= (settings.sensitivity * ev.delta.y).to_radians(); //* window_scale
-                yaw -= (settings.sensitivity * ev.delta.x).to_radians(); //* window_scale
-            }
-
-            pitch = pitch.clamp(-1.54, 1.54);
-
-            // Order is important to prevent unintended roll
-            transform.rotation =
-                Quat::from_axis_angle(Vec3::Y, yaw) * Quat::from_axis_angle(Vec3::X, pitch);
-        }
-    }
-    state.pitch = pitch;
-    state.yaw = yaw;
-}
-
 fn cursor_grab(keys: Res<Input<KeyCode>>, mut windows: ResMut<Windows>) {
     if keys.just_pressed(KeyCode::Escape) {
         let window = windows.get_primary_mut().unwrap();
         toggle_grab_cursor(window);
     }
+}
+
+/// Grabs/ungrabs mouse cursor
+fn toggle_grab_cursor(window: &mut Window) {
+    window.set_cursor_lock_mode(!window.cursor_locked());
+    window.set_cursor_visibility(!window.cursor_visible());
 }

@@ -25,8 +25,8 @@ fn main() {
             vsync: false,
             resizable: true,
             decorations: true,
-            cursor_locked: false,
-            cursor_visible: true,
+            cursor_locked: true,
+            cursor_visible: false,
             mode: WindowMode::Windowed,
             transparent: false,
             #[cfg(target_arch = "wasm32")]
