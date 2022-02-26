@@ -1,11 +1,15 @@
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 
-use self::{custom_material::CustomMaterial, emissive_material::EmissiveMaterial};
+use self::{
+    custom_material::CustomMaterial, emissive_material::EmissiveMaterial,
+    splash_screen::SplashScreenPlugin,
+};
 
 pub mod custom_material;
 pub mod emissive_material;
 mod material_util;
+mod splash_screen;
 
 pub struct AssetsPlugin;
 
@@ -18,7 +22,8 @@ impl Plugin for AssetsPlugin {
             .with_collection::<ModelAssets>()
             .build(app);
 
-        app.add_plugin(MaterialPlugin::<CustomMaterial>::default())
+        app.add_plugin(SplashScreenPlugin)
+            .add_plugin(MaterialPlugin::<CustomMaterial>::default())
             .add_plugin(MaterialPlugin::<EmissiveMaterial>::default())
             .add_state(GameState::Loading);
     }
