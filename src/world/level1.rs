@@ -50,7 +50,7 @@ fn spawn_demo_cubes(
             .spawn_bundle(PbrBundle {
                 mesh: mesh.clone(),
                 material: material.clone(),
-                transform: Transform::from_xyz(0.0, i as f32 * 6.0 + 5.0, -10.0),
+                transform: Transform::from_xyz(0.0, i as f32 * 6.0 + 5.0, -50.0),
                 ..Default::default()
             })
             .insert(RigidBody::Dynamic)
@@ -187,7 +187,7 @@ fn setup_level_one(
             None => panic!("Mesh does not contain vertex positions"),
             Some(vertex_values) => match &vertex_values {
                 VertexAttributeValues::Float32x3(positions) => positions
-                    .into_iter()
+                    .iter()
                     .map(|[x, y, z]| Point3::new(*x, *y, *z))
                     .collect(),
                 _ => panic!("Unexpected types in {:?}", Mesh::ATTRIBUTE_POSITION),
