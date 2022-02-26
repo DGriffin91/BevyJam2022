@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use bevy::{
     ecs::system::{lifetimeless::SRes, SystemParamItem},
     pbr::MaterialPipeline,
@@ -15,6 +17,7 @@ use bevy::{
         renderer::RenderDevice,
     },
 };
+use bevy_egui::egui;
 
 use crate::{
     sampler_binding, sampler_group_layout, texture_binding, texture_group_layout, texture_view,
@@ -30,33 +33,31 @@ pub struct MaterialSetProp {
     pub blend: f32,
 }
 
-// pub fn log_slider<Num: egui::emath::Numeric>(
-//     ui: &mut egui::Ui,
-//     value: &mut Num,
-//     range: RangeInclusive<Num>,
-//     text: &str,
-// ) {
-//     ui.add(egui::Slider::new(value, range).logarithmic(true).text(text));
-// }
-
-// pub fn slider<Num: egui::emath::Numeric>(
-//     ui: &mut egui::Ui,
-//     value: &mut Num,
-//     range: RangeInclusive<Num>,
-//     text: &str,
-// ) {
-//     ui.add(egui::Slider::new(value, range).text(text));
-// }
-
-// impl MaterialSetProp {
-//     pub fn build_ui(&mut self, ui: &mut egui::Ui, label: &str) {
-//         ui.label(label);
-//         log_slider(ui, &mut self.scale, 0.0..=100.0, "scale");
-//         log_slider(ui, &mut self.contrast, 0.0..=10.0, "contrast");
-//         log_slider(ui, &mut self.brightness, 0.0..=40.0, "brightness");
-//         log_slider(ui, &mut self.blend, 0.0..=1.0, "blend");
-//     }
-// }
+pub fn log_slider<Num: egui::emath::Numeric>(
+    ui: &mut egui::Ui,
+    value: &mut Num,
+    range: RangeInclusive<Num>,
+    text: &str,
+) {
+    ui.add(egui::Slider::new(value, range).logarithmic(true).text(text));
+}
+pub fn slider<Num: egui::emath::Numeric>(
+    ui: &mut egui::Ui,
+    value: &mut Num,
+    range: RangeInclusive<Num>,
+    text: &str,
+) {
+    ui.add(egui::Slider::new(value, range).text(text));
+}
+impl MaterialSetProp {
+    pub fn build_ui(&mut self, ui: &mut egui::Ui, label: &str) {
+        ui.label(label);
+        log_slider(ui, &mut self.scale, 0.0..=100.0, "scale");
+        log_slider(ui, &mut self.contrast, 0.0..=10.0, "contrast");
+        log_slider(ui, &mut self.brightness, 0.0..=40.0, "brightness");
+        log_slider(ui, &mut self.blend, 0.0..=1.0, "blend");
+    }
+}
 
 #[derive(Debug, Clone, Copy, AsStd140)]
 pub struct MaterialProperties {
@@ -73,27 +74,27 @@ pub struct MaterialProperties {
     // pub directional_light_color: Vec3,
 }
 
-// impl MaterialProperties {
-//     pub fn build_ui(&mut self, ui: &mut egui::Ui) {
-//         if ui.button("Debug Print").clicked() {
-//             dbg!(&self);
-//         }
-//         self.lightmap.build_ui(ui, "lightmap");
-//         self.base_a.build_ui(ui, "base_a");
-//         self.base_b.build_ui(ui, "base_b");
-//         self.vary_a.build_ui(ui, "vary_a");
-//         self.vary_b.build_ui(ui, "vary_b");
-//         self.reflection.build_ui(ui, "reflection");
-//         self.reflection_mask.build_ui(ui, "reflection_mask");
-//         self.walls.build_ui(ui, "walls");
-//         self.mist.build_ui(ui, "mist");
-//         ui.label("-------------");
-//         ui.add(
-//             egui::Slider::new(&mut self.directional_light_blend, 0.0..=5.0)
-//                 .text("directional_light_blend"),
-//         );
-//     }
-// }
+impl MaterialProperties {
+    pub fn build_ui(&mut self, ui: &mut egui::Ui) {
+        if ui.button("Debug Print").clicked() {
+            dbg!(&self);
+        }
+        self.lightmap.build_ui(ui, "lightmap");
+        self.base_a.build_ui(ui, "base_a");
+        self.base_b.build_ui(ui, "base_b");
+        self.vary_a.build_ui(ui, "vary_a");
+        self.vary_b.build_ui(ui, "vary_b");
+        self.reflection.build_ui(ui, "reflection");
+        self.reflection_mask.build_ui(ui, "reflection_mask");
+        self.walls.build_ui(ui, "walls");
+        self.mist.build_ui(ui, "mist");
+        ui.label("-------------");
+        ui.add(
+            egui::Slider::new(&mut self.directional_light_blend, 0.0..=5.0)
+                .text("directional_light_blend"),
+        );
+    }
+}
 
 // #[derive(Debug, Clone)]
 // pub struct MaterialTexture {
