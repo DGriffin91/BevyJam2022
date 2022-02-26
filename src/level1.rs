@@ -1,8 +1,6 @@
 use bevy::{
     math::{EulerRot, Quat, Vec3},
-    pbr::{
-        DirectionalLight, DirectionalLightBundle, MaterialMeshBundle, PointLight, PointLightBundle,
-    },
+    pbr::{DirectionalLight, DirectionalLightBundle, MaterialMeshBundle},
     prelude::{
         AssetServer, Assets, Color, Commands, OrthographicProjection, Res, ResMut, Transform,
     },

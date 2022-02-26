@@ -13,14 +13,15 @@ use bevy::{
 };
 
 pub fn get_sampler(render_device: &mut Res<RenderDevice>, address_mode: AddressMode) -> Sampler {
-    let mut sampler_descriptor = SamplerDescriptor::default();
-
-    sampler_descriptor.address_mode_u = address_mode;
-    sampler_descriptor.address_mode_v = address_mode;
-    sampler_descriptor.mipmap_filter = FilterMode::Linear;
-    sampler_descriptor.mag_filter = FilterMode::Linear;
-    sampler_descriptor.min_filter = FilterMode::Linear;
-    sampler_descriptor.anisotropy_clamp = NonZeroU8::new(16);
+    let sampler_descriptor = SamplerDescriptor {
+        address_mode_u: address_mode,
+        address_mode_v: address_mode,
+        mipmap_filter: FilterMode::Linear,
+        mag_filter: FilterMode::Linear,
+        min_filter: FilterMode::Linear,
+        anisotropy_clamp: NonZeroU8::new(16),
+        ..Default::default()
+    };
 
     render_device.create_sampler(&sampler_descriptor)
 }
@@ -29,8 +30,8 @@ pub fn get_image_texture_cube(
     gpu_images: &RenderAssets<Image>,
     texture: &Handle<Image>,
 ) -> Option<TextureView> {
-    if let Some(gpu_image) = gpu_images.get(texture) {
-        Some(gpu_image.texture.create_view(&TextureViewDescriptor {
+    gpu_images.get(texture).map(|gpu_image| {
+        gpu_image.texture.create_view(&TextureViewDescriptor {
             label: None,
             format: Some(TextureFormat::Rgba8UnormSrgb),
             dimension: Some(TextureViewDimension::Cube),
@@ -39,10 +40,8 @@ pub fn get_image_texture_cube(
             mip_level_count: None,
             base_array_layer: 0,
             array_layer_count: None,
-        }))
-    } else {
-        return None;
-    }
+        })
+    })
 }
 
 #[macro_export]
