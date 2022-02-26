@@ -121,20 +121,20 @@ pub struct CustomMaterial {
     pub textures: [Handle<Image>; 5],
 }
 
-//impl CustomMaterial {
-//    pub fn build_ui(&mut self, ui: &mut egui::Ui, asset_server: &Res<AssetServer>) {
-//        //self.material_properties.build_ui(ui);
-//        ui.label("CustomMaterial");
-//        if ui.button("Print Paths").clicked() {
-//            for texture in &self.textures {
-//                println!("{}", texture.path);
-//            }
-//        }
-//        for texture in &mut self.textures {
-//            texture.build_ui(ui, asset_server)
-//        }
-//    }
-//}
+// impl CustomMaterial {
+//     pub fn build_ui(&mut self, ui: &mut egui::Ui, asset_server: &Res<AssetServer>) {
+//         //self.material_properties.build_ui(ui);
+//         ui.label("CustomMaterial");
+//         if ui.button("Print Paths").clicked() {
+//             for texture in &self.textures {
+//                 println!("{}", texture.path);
+//             }
+//         }
+//         for texture in &mut self.textures {
+//             texture.build_ui(ui, asset_server)
+//         }
+//     }
+// }
 
 #[derive(Clone)]
 pub struct GpuCustomMaterial {
