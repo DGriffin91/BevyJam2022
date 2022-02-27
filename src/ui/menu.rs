@@ -2,7 +2,9 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext};
 
 use crate::{
-    assets::{custom_material::CustomMaterial, GameState},
+    assets::{
+        custom_material::CustomMaterial, light_shaft_material::LightShaftMaterial, GameState,
+    },
     world::LevelAsset,
 };
 
@@ -20,27 +22,63 @@ fn menu_ui(
     //mut scoreboard: EventWriter<ScoreboardEvent>,
     mut egui_context: ResMut<EguiContext>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
+    mut light_shaft_materials: ResMut<Assets<LightShaftMaterial>>,
     mut level_asset_query: Query<&mut LevelAsset>,
 ) {
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
-        egui::Window::new("materials").show(egui_context.ctx_mut(), |ui| {
-            if let Some(mut main) = level_asset_query.iter_mut().next() {
-                let mat_props = {
-                    ui.collapsing("material properties", |ui| {
-                        main.material_properties.build_ui(ui);
-                    });
-                    main.material_properties
-                };
-                for mat in level_asset_query.iter_mut() {
-                    if let Some(mat) = custom_materials.get_mut(&mat.material_handle) {
-                        mat.material_properties = mat_props;
-                        //ui.collapsing("main material", |ui| {
-                        //    mat.build_ui(ui, &asset_server);
-                        //});
+        egui::Window::new("environment materials").show(egui_context.ctx_mut(), |ui| {
+            let mut mat_props = None;
+            let mut shaft_props = None;
+            for mut level_asset in level_asset_query.iter_mut() {
+                match level_asset.as_mut() {
+                    LevelAsset::CustomMaterial {
+                        ref mut properties,
+                        handle,
+                    } => {
+                        if let Some(mat_props) = mat_props {
+                            *properties = mat_props;
+                            if let Some(mat) = custom_materials.get_mut(handle.clone()) {
+                                mat.material_properties = mat_props;
+                            }
+                        } else {
+                            ui.collapsing("material properties", |ui| {
+                                properties.build_ui(ui);
+                            });
+                            mat_props = Some(*properties);
+                        }
                     }
-                }
+                    LevelAsset::LightShaftMaterial { properties, handle } => {
+                        if let Some(shaft_props) = shaft_props {
+                            *properties = shaft_props;
+                            if let Some(mat) = light_shaft_materials.get_mut(handle.clone()) {
+                                mat.material_properties = shaft_props;
+                            }
+                        } else {
+                            ui.collapsing("light shaft properties", |ui| {
+                                properties.build_ui(ui);
+                            });
+                            shaft_props = Some(*properties);
+                        }
+                    }
+                };
             }
+            //if let Some(mut level_asset) = level_asset_query.iter_mut().next() {
+            //    let mat_props = {
+            //        ui.collapsing("material properties", |ui| {
+            //            main.material_properties.build_ui(ui);
+            //        });
+            //        main.material_properties
+            //    };
+            //    for mat in level_asset_query.iter_mut() {
+            //        if let Some(mat) = custom_materials.get_mut(&mat.material_handle) {
+            //            mat.material_properties = mat_props;
+            //            //ui.collapsing("main material", |ui| {
+            //            //    mat.build_ui(ui, &asset_server);
+            //            //});
+            //        }
+            //    }
+            //}
         });
         /*
         egui::Window::new("Setup")

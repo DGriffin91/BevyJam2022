@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::assets::custom_material::{CustomMaterial, MaterialProperties};
+use crate::assets::{
+    custom_material::{CustomMaterial, MaterialProperties},
+    light_shaft_material::{LightShaftMaterial, LightShaftProperties},
+};
 
 use self::level1::LevelOnePlugin;
 
@@ -15,7 +18,19 @@ impl Plugin for WorldPlugin {
 }
 
 #[derive(Component, Debug)]
-pub struct LevelAsset {
-    pub material_properties: MaterialProperties,
-    pub material_handle: Handle<CustomMaterial>,
+pub enum LevelAsset {
+    CustomMaterial {
+        properties: MaterialProperties,
+        handle: Handle<CustomMaterial>,
+    },
+    LightShaftMaterial {
+        properties: LightShaftProperties,
+        handle: Handle<LightShaftMaterial>,
+    },
 }
+
+//#[derive(Component, Debug)]
+//pub struct LevelAsset {
+//    pub material_properties: MaterialProperties,
+//    pub material_handle: Handle<CustomMaterial>,
+//}

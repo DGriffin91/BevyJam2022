@@ -3,11 +3,12 @@ use bevy_asset_loader::{AssetCollection, AssetLoader};
 
 use self::{
     custom_material::CustomMaterial, emissive_material::EmissiveMaterial,
-    splash_screen::SplashScreenPlugin,
+    light_shaft_material::LightShaftMaterial, splash_screen::SplashScreenPlugin,
 };
 
 pub mod custom_material;
 pub mod emissive_material;
+pub mod light_shaft_material;
 mod material_util;
 mod splash_screen;
 
@@ -25,6 +26,7 @@ impl Plugin for AssetsPlugin {
         app.add_plugin(SplashScreenPlugin)
             .add_plugin(MaterialPlugin::<CustomMaterial>::default())
             .add_plugin(MaterialPlugin::<EmissiveMaterial>::default())
+            .add_plugin(MaterialPlugin::<LightShaftMaterial>::default())
             .add_state(GameState::Loading);
     }
 }
@@ -81,4 +83,6 @@ pub struct ModelAssets {
     pub level1_spheres: Handle<Mesh>,
     #[asset(path = "models/level1/walls.gltf#Mesh0/Primitive0")]
     pub level1_walls: Handle<Mesh>,
+    #[asset(path = "models/level1/light_shafts.gltf#Mesh0/Primitive0")]
+    pub level1_light_shafts: Handle<Mesh>,
 }

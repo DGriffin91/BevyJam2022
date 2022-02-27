@@ -17,7 +17,13 @@ use crate::{
         custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp},
         GameState, ImageAssets,
     },
-    assets::{emissive_material::EmissiveMaterial, ModelAssets},
+    assets::{
+        emissive_material::EmissiveMaterial,
+        light_shaft_material::{
+            update_light_shaft_material_time, LightShaftMaterial, LightShaftProperties,
+        },
+        ModelAssets,
+    },
 };
 
 use super::LevelAsset;
@@ -30,7 +36,8 @@ impl Plugin for LevelOnePlugin {
             SystemSet::on_enter(GameState::Playing)
                 .with_system(setup_level_one)
                 .with_system(spawn_demo_cubes),
-        );
+        )
+        .add_system(update_light_shaft_material_time);
     }
 }
 
@@ -72,6 +79,7 @@ fn setup_level_one(
     model_assets: Res<ModelAssets>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
     mut emissive_materials: ResMut<Assets<EmissiveMaterial>>,
+    mut light_shaft_materials: ResMut<Assets<LightShaftMaterial>>,
 ) {
     let variation_texture = image_assets.detail.clone();
     let base_texture = image_assets.concrete.clone();
@@ -131,7 +139,7 @@ fn setup_level_one(
             scale: 0.032,
             contrast: 1.0,
             brightness: 1.0,
-            blend: 0.0,
+            blend: 1.0,
         },
         directional_light_blend: 0.6,
     };
@@ -147,6 +155,59 @@ fn setup_level_one(
         }),
         ..Default::default()
     });
+
+    let light_shaft_material_props = LightShaftProperties {
+        shaft: MaterialSetProp {
+            scale: 1.0,
+            contrast: 1.9,
+            brightness: 7.0,
+            blend: 1.0,
+        },
+        noise_a: MaterialSetProp {
+            scale: 0.5,
+            contrast: 5.7,
+            brightness: 17.5,
+            blend: 0.25,
+        },
+        noise_b: MaterialSetProp {
+            scale: 0.00048,
+            contrast: 1.3,
+            brightness: 3.6,
+            blend: 1.0,
+        },
+        speed: Vec3::new(-0.004, -0.01, 0.0),
+        color_tint: Vec3::new(1.0, 0.783, 0.57),
+        time: 0.0,
+    };
+    let light_shaft_material = light_shaft_materials.add(LightShaftMaterial {
+        noise_texture: Some(variation_texture.clone()),
+        material_properties: light_shaft_material_props,
+    });
+    let light_shaft_model = &model_assets.level1_light_shafts;
+    commands
+        .spawn()
+        .insert_bundle(MaterialMeshBundle {
+            mesh: light_shaft_model.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            material: light_shaft_material.clone(),
+            ..Default::default()
+        })
+        .insert(LevelAsset::LightShaftMaterial {
+            properties: light_shaft_material_props,
+            handle: light_shaft_material.clone(),
+        });
+    commands
+        .spawn()
+        .insert_bundle(MaterialMeshBundle {
+            mesh: light_shaft_model.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::new(-1.0, -1.0, -1.0)),
+            material: light_shaft_material.clone(),
+            ..Default::default()
+        })
+        .insert(LevelAsset::LightShaftMaterial {
+            properties: light_shaft_material_props,
+            handle: light_shaft_material,
+        });
 
     for (model, lightbake) in [
         (
@@ -216,9 +277,9 @@ fn setup_level_one(
             .insert(CollisionShape::Custom {
                 shape: CustomCollisionShape::new(ColliderBuilder::trimesh(vertices, indices)),
             })
-            .insert(LevelAsset {
-                material_properties,
-                material_handle: material,
+            .insert(LevelAsset::CustomMaterial {
+                properties: material_properties,
+                handle: material,
             });
     }
 
@@ -255,52 +316,4 @@ fn setup_level_one(
         },
         ..Default::default()
     });
-
-    //Sky Light for PBR
-    //commands.spawn_bundle(PointLightBundle {
-    //    transform: Transform::from_xyz(0.0, 5.0, 100.0),
-    //    point_light: PointLight {
-    //        intensity: 30000.0,
-    //        range: 1000.0,
-    //        radius: 30.0,
-    //        color: Color::rgb(0.3, 0.25, 1.0),
-    //        shadows_enabled: false,
-    //        ..Default::default()
-    //    },
-    //    ..Default::default()
-    //});
-
-    // Only doing a couple light positions because Bevy complains:
-    // WARN bevy_pbr::render::light: Cluster light index lists is full!
-    // The PointLights in the view are affecting too many clusters.
-    //let lamp_locations = [
-    //    Vec3::new(-15.0, 17.0, -16.0),
-    //    Vec3::new(-10.0, 17.0, -16.0),
-    //    Vec3::new(-10.0, 17.0, -16.0),
-    //    Vec3::new(-5.0, 17.0, -16.0),
-    //    Vec3::new(-5.0, 17.0, -16.0),
-    //    Vec3::new(0.0, 17.0, -16.0),
-    //    Vec3::new(5.0, 17.0, -16.0),
-    //    Vec3::new(10.0, 17.0, -16.0),
-    //    Vec3::new(15.0, 17.0, -16.0),
-    //];
-    //let intensity = 1000.0;
-    //dbg!(f32::sqrt(intensity * 10.0 / (4.0 * std::f32::consts::PI)));
-    //for lamp_loc in lamp_locations {
-    //    commands.spawn_bundle(PointLightBundle {
-    //        transform: Transform::from_xyz(lamp_loc.x, lamp_loc.y, lamp_loc.z),
-    //        point_light: PointLight {
-    //            intensity,
-    //            range: f32::sqrt(intensity * 10.0 / (4.0 * std::f32::consts::PI)),
-    //            radius: 10.0, //Oversize since we only have 2
-    //            color: Color::rgb(1.0, 1.0, 1.0),
-    //            shadows_enabled: false,
-    //            ..Default::default()
-    //        },
-    //        ..Default::default()
-    //    });
-    //}
-
-    // Tell the asset server to watch for asset changes on disk:
-    // asset_server.watch_for_changes().unwrap();
 }
