@@ -40,4 +40,5 @@ impl Plugin for GamePlugin {
 enum Layer {
     Player,
     World,
+    Raycast,
 }

@@ -1,11 +1,14 @@
+use std::time::Duration;
+
 use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
 use bevy_kira_audio::{Audio, AudioSource};
+use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial};
 use heron::rapier_plugin::convert::IntoRapier;
 use heron::rapier_plugin::rapier3d::prelude::RigidBodySet;
-use heron::rapier_plugin::RigidBodyHandle;
-use heron::{CollisionLayers, CollisionShape, RigidBody, RotationConstraints};
+use heron::rapier_plugin::{PhysicsWorld, RigidBodyHandle};
+use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, RotationConstraints};
 use rand::prelude::SliceRandom;
 
 use crate::assets::{AudioAssets, GameState};
@@ -18,7 +21,6 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputState>()
             .init_resource::<MovementSettings>()
-            .add_event::<FireEvent>()
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_player))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
@@ -26,17 +28,12 @@ impl Plugin for PlayerPlugin {
                     .with_system(player_move)
                     .with_system(player_look)
                     .with_system(player_fire)
+                    .with_system(hide_player_polylines)
                     .with_system(cursor_grab)
                     .with_system(player_change_speed)
                     .with_system(footsteps),
             );
     }
-}
-
-#[derive(Debug)]
-pub struct FireEvent {
-    pub transform: Transform,
-    pub release: bool,
 }
 
 /// Keeps track of mouse motion events, pitch, and yaw
@@ -58,8 +55,8 @@ pub struct MovementSettings {
 impl Default for MovementSettings {
     fn default() -> Self {
         Self {
-            sensitivity: 0.03, // default: 0.00012
-            speed: 10.0,       // default: 12.0
+            sensitivity: 0.03,
+            speed: 10.0,
             lock_y: true,
             run_multiplier: 1.5,
         }
@@ -83,12 +80,12 @@ impl Default for PlayerBundle {
         PlayerBundle {
             player: Player,
             footsteps: Footsteps::default(),
-            transform: Transform::from_xyz(0.0, 1.5, 0.0),
+            transform: Transform::from_xyz(0.0, 3.0, 0.0),
             global_tranform: GlobalTransform::default(),
             rigid_body: RigidBody::Dynamic,
-            collision_layers: CollisionLayers::all::<Layer>().with_group(Layer::Player),
+            collision_layers: CollisionLayers::new(Layer::Player, Layer::World),
             collision_shape: CollisionShape::Capsule {
-                half_segment: 2.0,
+                half_segment: 1.0,
                 radius: 0.5,
             },
             rotation_constraints: RotationConstraints::restrict_to_y_only(),
@@ -107,8 +104,15 @@ struct Footsteps {
 #[derive(Component, Default)]
 struct PlayerCam;
 
+#[derive(Component)]
+struct PlayerPolyline;
+
 /// Spawns the `Camera3dBundle` to be controlled
-fn setup_player(mut commands: Commands) {
+fn setup_player(
+    mut commands: Commands,
+    mut polylines: ResMut<Assets<Polyline>>,
+    mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
+) {
     commands
         .spawn_bundle(PlayerBundle::default())
         .with_children(|parent| {
@@ -125,6 +129,22 @@ fn setup_player(mut commands: Commands) {
                 })
                 .insert(PlayerCam);
         });
+
+    commands
+        .spawn_bundle(PolylineBundle {
+            polyline: polylines.add(Polyline {
+                vertices: vec![Vec3::ZERO, Vec3::ZERO],
+            }),
+            material: polyline_materials.add(PolylineMaterial {
+                width: 1.0,
+                color: Color::RED,
+                perspective: true,
+            }),
+            visibility: Visibility { is_visible: false },
+            ..Default::default()
+        })
+        .insert(Timer::new(Duration::from_secs(3), false))
+        .insert(PlayerPolyline);
 
     commands.spawn_bundle(ButtonBundle {
         style: Style {
@@ -143,7 +163,6 @@ fn enable_ccd(
 ) {
     for handle in new_handles.iter() {
         if let Some(body) = rigid_bodies.get_mut(handle.into_rapier()) {
-            println!("Enabled CCD");
             body.enable_ccd(true);
         }
     }
@@ -238,28 +257,84 @@ fn player_look(
 }
 
 fn player_fire(
+    mut commands: Commands,
     windows: Res<Windows>,
-    mut ev_fire: EventWriter<FireEvent>,
     mouse_button_input: Res<Input<MouseButton>>,
-    query: Query<&Transform, With<Player>>,
+    physics_world: PhysicsWorld,
+    state: Res<InputState>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    player_cams: Query<&GlobalTransform, With<PlayerCam>>,
+    mut polylines: ResMut<Assets<Polyline>>,
+    mut polylines_query: Query<
+        (&mut Handle<Polyline>, &mut Visibility, &mut Timer),
+        With<PlayerPolyline>,
+    >,
 ) {
     let window = windows.get_primary().unwrap();
-    if window.is_focused() && window.cursor_locked() {
-        if mouse_button_input.just_pressed(MouseButton::Left) {
-            for transform in query.iter() {
-                ev_fire.send(FireEvent {
-                    transform: *transform,
-                    release: false,
-                })
+    if !window.is_focused() || !window.cursor_locked() {
+        return;
+    }
+
+    if mouse_button_input.just_pressed(MouseButton::Left) {
+        for cam_translation in player_cams.iter() {
+            let pitch = state.pitch;
+            let yaw = -state.yaw;
+            let xz = f32::cos(pitch);
+            let looking_dir = -Vec3::new(-xz * f32::sin(yaw), -f32::sin(pitch), xz * f32::cos(yaw));
+
+            if let Some(collision) = physics_world.ray_cast_with_filter(
+                cam_translation.translation,
+                looking_dir * 100.0,
+                true,
+                CollisionLayers::new(Layer::Raycast, Layer::World),
+                |_| true,
+            ) {
+                for (polyline, mut visibility, mut timer) in polylines_query.iter_mut() {
+                    if let Some(polyline) = polylines.get_mut(&*polyline) {
+                        polyline.vertices[0] = cam_translation.translation;
+                        polyline.vertices[1] = collision.collision_point;
+                    }
+
+                    visibility.is_visible = true;
+                    timer.reset();
+                }
+
+                let mesh = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
+                let material = materials.add(StandardMaterial {
+                    base_color: Color::PINK,
+                    ..Default::default()
+                });
+
+                commands
+                    .spawn_bundle(PbrBundle {
+                        mesh: mesh.clone(),
+                        material: material.clone(),
+                        transform: Transform::from_translation(collision.collision_point),
+                        ..Default::default()
+                    })
+                    .insert(RigidBody::Dynamic)
+                    .insert(CollisionShape::Cuboid {
+                        half_extends: Vec3::new(0.5, 0.5, 0.5),
+                        border_radius: None,
+                    })
+                    .insert(PhysicMaterial {
+                        restitution: 0.7,
+                        ..Default::default()
+                    });
             }
         }
-        if mouse_button_input.just_released(MouseButton::Left) {
-            for transform in query.iter() {
-                ev_fire.send(FireEvent {
-                    transform: *transform,
-                    release: true,
-                })
-            }
+    }
+}
+
+fn hide_player_polylines(
+    time: Res<Time>,
+    mut polylines_query: Query<(&mut Visibility, &mut Timer), With<PlayerPolyline>>,
+) {
+    for (mut visibility, mut timer) in polylines_query.iter_mut() {
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            visibility.is_visible = false;
         }
     }
 }
