@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
+use bevy_kira_audio::AudioSource;
 
 use self::{
     custom_material::CustomMaterial, emissive_material::EmissiveMaterial,
@@ -21,6 +22,7 @@ impl Plugin for AssetsPlugin {
             .with_collection::<FontAssets>()
             .with_collection::<ImageAssets>()
             .with_collection::<ModelAssets>()
+            .with_collection::<AudioAssets>()
             .build(app);
 
         app.add_plugin(SplashScreenPlugin)
@@ -85,4 +87,10 @@ pub struct ModelAssets {
     pub level1_walls: Handle<Mesh>,
     #[asset(path = "models/level1/light_shafts.gltf#Mesh0/Primitive0")]
     pub level1_light_shafts: Handle<Mesh>,
+}
+
+#[derive(AssetCollection)]
+pub struct AudioAssets {
+    #[asset(path = "audio/atmosphere.ogg")]
+    pub atmosphere: Handle<AudioSource>,
 }

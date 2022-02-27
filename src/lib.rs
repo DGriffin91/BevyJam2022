@@ -1,4 +1,5 @@
 use assets::AssetsPlugin;
+use audio::GameAudioPlugin;
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_egui::EguiPlugin;
 use bevy_polyline::PolylinePlugin;
@@ -8,6 +9,7 @@ use ui::UiPlugin;
 use world::WorldPlugin;
 
 mod assets;
+mod audio;
 mod player;
 mod ui;
 mod world;
@@ -27,6 +29,7 @@ impl Plugin for GamePlugin {
             .add_plugin(AssetsPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(UiPlugin)
+            .add_plugin(GameAudioPlugin)
             .add_plugin(WorldPlugin);
     }
 }
