@@ -80,6 +80,7 @@ fn setup_player(mut commands: Commands) {
             GlobalTransform::default(),
         ))
         .insert(Player)
+        .insert(Footsteps::default())
         .with_children(|parent| {
             parent
                 .spawn_bundle(PerspectiveCameraBundle {
