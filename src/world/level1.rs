@@ -113,9 +113,9 @@ fn setup_level_one(
             blend: 0.04,
         },
         vary_b: MaterialSetProp {
-            scale: 24.0,
-            contrast: 0.14,
-            brightness: 1.05,
+            scale: 70.0,
+            contrast: 0.105,
+            brightness: 1.35,
             blend: 1.0,
         },
         reflection: MaterialSetProp {
@@ -165,7 +165,7 @@ fn setup_level_one(
             blend: 1.0,
         },
         noise_a: MaterialSetProp {
-            scale: 0.48,
+            scale: 1.0,
             contrast: 5.8,
             brightness: 40.0,
             blend: 0.25,
