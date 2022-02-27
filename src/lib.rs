@@ -2,6 +2,7 @@ use assets::AssetsPlugin;
 use audio::GameAudioPlugin;
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_egui::EguiPlugin;
+use bevy_kira_audio::AudioPlugin;
 use bevy_polyline::PolylinePlugin;
 use heron::{Gravity, PhysicsPlugin};
 use player::PlayerPlugin;
@@ -20,6 +21,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app
             // External plugins
+            .add_plugin(AudioPlugin)
             .add_plugin(EguiPlugin)
             .add_plugin(FrameTimeDiagnosticsPlugin::default())
             .add_plugin(PolylinePlugin)

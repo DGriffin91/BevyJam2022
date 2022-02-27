@@ -4,7 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.6", default-features = false, features = ["jpeg","bevy_gilrs","bevy_winit","render","png","hdr","vorbis","x11","filesystem_watcher"] }
+bevy = { version = "0.6", default-features = false, features = [
+  "jpeg",
+  "bevy_gilrs",
+  "bevy_winit",
+  "render",
+  "png",
+  "hdr",
+  "vorbis",
+  "x11",
+  "filesystem_watcher",
+] }
 bevy_asset_loader = "0.9"
 bevy_egui = "0.11"
 bevy_polyline = "0.1"
@@ -21,5 +31,7 @@ opt-level = 1
 opt-level = 3
 
 [patch.crates-io]
-bevy = { git = "https://github.com/bevyengine/bevy", rev = "81d57e129b507047ab165b1cee1975cd54ba100f", features = ["jpeg"]}
+bevy = { git = "https://github.com/bevyengine/bevy", rev = "81d57e129b507047ab165b1cee1975cd54ba100f", features = [
+  "jpeg",
+] }
 bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "main" }

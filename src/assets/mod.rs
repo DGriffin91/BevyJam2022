@@ -91,6 +91,8 @@ pub struct ModelAssets {
 
 #[derive(AssetCollection)]
 pub struct AudioAssets {
+    #[asset(path = "audio/footsteps", folder)]
+    pub footsteps: Vec<HandleUntyped>,
     #[asset(path = "audio/atmosphere.ogg")]
     pub atmosphere: Handle<AudioSource>,
 }
