@@ -47,7 +47,7 @@ fn fade_in_atmosphere(
 ) {
     if let Some(atmosphere_ch) = &env_audio.atmosphere {
         if let Some(atmosphere_state) = audio_state.channels.get_mut(atmosphere_ch) {
-            if atmosphere_state.stopped == true {
+            if atmosphere_state.stopped {
                 audio.play_looped_in_channel(audio_assets.atmosphere.clone(), atmosphere_ch);
                 atmosphere_state.time_started = time.time_since_startup().as_secs_f32();
                 atmosphere_state.stopped = false;
