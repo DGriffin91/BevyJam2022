@@ -50,9 +50,9 @@ impl Default for MovementSettings {
     fn default() -> Self {
         Self {
             sensitivity: 0.03, // default: 0.00012
-            speed: 18.0,       // default: 12.0
+            speed: 10.0,       // default: 12.0
             lock_y: true,
-            run_multiplier: 1.8,
+            run_multiplier: 1.5,
         }
     }
 }
@@ -75,6 +75,12 @@ fn setup_player(mut commands: Commands) {
             parent
                 .spawn_bundle(PerspectiveCameraBundle {
                     transform: Transform::from_xyz(0.0, 3.0, 0.0),
+                    perspective_projection: PerspectiveProjection {
+                        fov: (80.0f32).to_radians(),
+                        aspect_ratio: 1.0,
+                        near: 0.1,
+                        far: 1000.0,
+                    },
                     ..Default::default()
                 })
                 .insert(PlayerCam);
