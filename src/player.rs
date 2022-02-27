@@ -1,8 +1,10 @@
 use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
+use bevy_kira_audio::{Audio, AudioSource};
+use rand::prelude::SliceRandom;
 
-use crate::assets::GameState;
+use crate::assets::{AudioAssets, GameState};
 
 /// Contains everything needed to add first-person fly camera behavior to your game
 pub struct PlayerPlugin;
@@ -19,7 +21,8 @@ impl Plugin for PlayerPlugin {
                     .with_system(player_look)
                     .with_system(player_fire)
                     .with_system(cursor_grab)
-                    .with_system(player_change_speed),
+                    .with_system(player_change_speed)
+                    .with_system(footsteps),
             );
     }
 }
@@ -57,10 +60,16 @@ impl Default for MovementSettings {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 struct Player;
 
-#[derive(Component)]
+#[derive(Component, Default)]
+struct Footsteps {
+    last_footstep_position: Vec3,
+    move_distance: f32,
+}
+
+#[derive(Component, Default)]
 struct PlayerCam;
 
 /// Spawns the `Camera3dBundle` to be controlled
@@ -104,11 +113,12 @@ fn player_move(
     time: Res<Time>,
     windows: Res<Windows>,
     settings: Res<MovementSettings>,
-    mut query: Query<&mut Transform, With<Player>>,
+    mut query: Query<(Entity, &mut Transform), With<Player>>,
+    mut footsteps: Query<&mut Footsteps>,
 ) {
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
-        for mut transform in query.iter_mut() {
+        for (entity, mut transform) in query.iter_mut() {
             let mut velocity = Vec3::ZERO;
             let local_z = transform.local_z();
             let local_z_y = if settings.lock_y { 0.0 } else { local_z.y };
@@ -136,7 +146,12 @@ fn player_move(
                 }
             }
 
-            transform.translation += velocity * time.delta_seconds() * run * settings.speed;
+            let move_delta = velocity * time.delta_seconds() * run * settings.speed;
+            transform.translation += move_delta;
+            if let Ok(mut footsteps) = footsteps.get_component_mut::<Footsteps>(entity) {
+                let abs_move_delta = move_delta.abs();
+                footsteps.move_distance += abs_move_delta.x.max(abs_move_delta.z);
+            }
         }
     }
 }
@@ -231,4 +246,23 @@ fn cursor_grab(keys: Res<Input<KeyCode>>, mut windows: ResMut<Windows>) {
 fn toggle_grab_cursor(window: &mut Window) {
     window.set_cursor_lock_mode(!window.cursor_locked());
     window.set_cursor_visibility(!window.cursor_visible());
+}
+
+fn footsteps(
+    mut footsteps: Query<&mut Footsteps>,
+    audio_assets: Res<AudioAssets>,
+    audio: Res<Audio>,
+) {
+    for mut footsteps in footsteps.iter_mut() {
+        if footsteps.move_distance > 5.0 {
+            footsteps.move_distance = 0.0;
+            let footstep_audio = audio_assets
+                .footsteps
+                .choose(&mut rand::thread_rng())
+                .unwrap()
+                .clone()
+                .typed::<AudioSource>();
+            audio.play(footstep_audio);
+        }
+    }
 }
