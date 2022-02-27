@@ -4,7 +4,7 @@ use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_egui::EguiPlugin;
 use bevy_kira_audio::AudioPlugin;
 use bevy_polyline::PolylinePlugin;
-use heron::{Gravity, PhysicsPlugin};
+use heron::{Gravity, PhysicsLayer, PhysicsPlugin};
 use player::PlayerPlugin;
 use ui::UiPlugin;
 use world::WorldPlugin;
@@ -34,4 +34,10 @@ impl Plugin for GamePlugin {
             .add_plugin(GameAudioPlugin)
             .add_plugin(WorldPlugin);
     }
+}
+
+#[derive(PhysicsLayer)]
+enum Layer {
+    Player,
+    World,
 }

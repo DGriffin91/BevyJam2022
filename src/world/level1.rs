@@ -9,7 +9,7 @@ use heron::{
         nalgebra::Point3,
         rapier3d::{math::Real, prelude::ColliderBuilder},
     },
-    CollisionShape, CustomCollisionShape, PhysicMaterial, RigidBody,
+    CollisionLayers, CollisionShape, CustomCollisionShape, PhysicMaterial, RigidBody,
 };
 
 use crate::{
@@ -24,6 +24,7 @@ use crate::{
         },
         ModelAssets,
     },
+    Layer,
 };
 
 use super::LevelAsset;
@@ -280,7 +281,8 @@ fn setup_level_one(
             .insert(LevelAsset::CustomMaterial {
                 properties: material_properties,
                 handle: material,
-            });
+            })
+            .insert(CollisionLayers::all::<Layer>().with_group(Layer::World));
     }
 
     //Bevy Sun

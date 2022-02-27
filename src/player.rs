@@ -2,9 +2,14 @@ use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
 use bevy_kira_audio::{Audio, AudioSource};
+use heron::rapier_plugin::convert::IntoRapier;
+use heron::rapier_plugin::rapier3d::prelude::RigidBodySet;
+use heron::rapier_plugin::RigidBodyHandle;
+use heron::{CollisionLayers, CollisionShape, RigidBody, RotationConstraints};
 use rand::prelude::SliceRandom;
 
 use crate::assets::{AudioAssets, GameState};
+use crate::Layer;
 
 /// Contains everything needed to add first-person fly camera behavior to your game
 pub struct PlayerPlugin;
@@ -17,6 +22,7 @@ impl Plugin for PlayerPlugin {
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_player))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
+                    .with_system(enable_ccd)
                     .with_system(player_move)
                     .with_system(player_look)
                     .with_system(player_fire)
@@ -60,12 +66,41 @@ impl Default for MovementSettings {
     }
 }
 
+#[derive(Bundle)]
+struct PlayerBundle {
+    player: Player,
+    footsteps: Footsteps,
+    transform: Transform,
+    global_tranform: GlobalTransform,
+    rigid_body: RigidBody,
+    collision_layers: CollisionLayers,
+    collision_shape: CollisionShape,
+    rotation_constraints: RotationConstraints,
+}
+
+impl Default for PlayerBundle {
+    fn default() -> Self {
+        PlayerBundle {
+            player: Player,
+            footsteps: Footsteps::default(),
+            transform: Transform::from_xyz(0.0, 1.5, 0.0),
+            global_tranform: GlobalTransform::default(),
+            rigid_body: RigidBody::Dynamic,
+            collision_layers: CollisionLayers::all::<Layer>().with_group(Layer::Player),
+            collision_shape: CollisionShape::Capsule {
+                half_segment: 2.0,
+                radius: 0.5,
+            },
+            rotation_constraints: RotationConstraints::restrict_to_y_only(),
+        }
+    }
+}
+
 #[derive(Component, Default)]
 struct Player;
 
 #[derive(Component, Default)]
 struct Footsteps {
-    last_footstep_position: Vec3,
     move_distance: f32,
 }
 
@@ -75,15 +110,11 @@ struct PlayerCam;
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(mut commands: Commands) {
     commands
-        .spawn_bundle((
-            Transform::from_xyz(0.0, 0.0, 0.0),
-            GlobalTransform::default(),
-        ))
-        .insert(Player)
+        .spawn_bundle(PlayerBundle::default())
         .with_children(|parent| {
             parent
                 .spawn_bundle(PerspectiveCameraBundle {
-                    transform: Transform::from_xyz(0.0, 3.0, 0.0),
+                    transform: Transform::from_xyz(0.0, 1.5, 0.0),
                     perspective_projection: PerspectiveProjection {
                         fov: (80.0f32).to_radians(),
                         aspect_ratio: 1.0,
@@ -98,13 +129,24 @@ fn setup_player(mut commands: Commands) {
     commands.spawn_bundle(ButtonBundle {
         style: Style {
             size: Size::new(Val::Px(4.0), Val::Px(4.0)),
-            // center button
             margin: Rect::all(Val::Auto),
             ..Default::default()
         },
         color: Color::rgb(1.0, 1.0, 1.0).into(),
         ..Default::default()
     });
+}
+
+fn enable_ccd(
+    mut rigid_bodies: ResMut<RigidBodySet>,
+    new_handles: Query<&RigidBodyHandle, (With<Player>, Added<RigidBodyHandle>)>,
+) {
+    for handle in new_handles.iter() {
+        if let Some(body) = rigid_bodies.get_mut(handle.into_rapier()) {
+            println!("Enabled CCD");
+            body.enable_ccd(true);
+        }
+    }
 }
 
 /// Handles keyboard input and movement
