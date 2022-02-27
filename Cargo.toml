@@ -30,8 +30,8 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 
-[patch.crates-io]
-bevy = { git = "https://github.com/bevyengine/bevy", rev = "81d57e129b507047ab165b1cee1975cd54ba100f", features = [
-  "jpeg",
-] }
-bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "main" }
+# [patch.crates-io]
+# bevy = { git = "https://github.com/bevyengine/bevy", rev = "81d57e129b507047ab165b1cee1975cd54ba100f", features = [
+#   "jpeg",
+# ] }
+# bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "main" }
