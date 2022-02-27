@@ -17,7 +17,7 @@ fn main() {
                 ..Default::default()
             },
             scale_factor_override: Some(1.0),
-            vsync: true,
+            vsync: false,
             resizable: true,
             decorations: true,
             cursor_locked: true,
