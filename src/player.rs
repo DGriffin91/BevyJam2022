@@ -371,7 +371,7 @@ fn footsteps(
     audio: Res<Audio>,
 ) {
     for mut footsteps in footsteps.iter_mut() {
-        if footsteps.move_distance > 5.0 {
+        if footsteps.move_distance > 4.0 {
             footsteps.move_distance = 0.0;
             let footstep_audio = audio_assets
                 .footsteps
