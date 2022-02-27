@@ -60,7 +60,7 @@ impl Default for MovementSettings {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 struct Player;
 
 #[derive(Component, Default)]
