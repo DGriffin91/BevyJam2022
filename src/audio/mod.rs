@@ -9,9 +9,7 @@ impl Plugin for GameAudioPlugin {
             .insert_resource(AudioState::default())
             .insert_resource(EnvironmentAudio::default())
             .add_system_set(
-                SystemSet::on_enter(GameState::Playing)
-                    .with_system(setup_audio_channels)
-                    .with_system(start_atmosphere),
+                SystemSet::on_enter(GameState::Playing).with_system(setup_audio_channels),
             )
             .add_system_set(
                 SystemSet::on_update(GameState::Playing).with_system(fade_in_atmosphere),
@@ -40,7 +38,7 @@ fn setup_audio_channels(
     );
 }
 
-fn start_atmosphere(
+fn fade_in_atmosphere(
     time: Res<Time>,
     audio: Res<Audio>,
     mut audio_state: ResMut<AudioState>,
@@ -48,20 +46,12 @@ fn start_atmosphere(
     env_audio: Res<EnvironmentAudio>,
 ) {
     if let Some(atmosphere_ch) = &env_audio.atmosphere {
-        audio.play_looped_in_channel(audio_assets.atmosphere.clone(), atmosphere_ch);
         if let Some(atmosphere_state) = audio_state.channels.get_mut(atmosphere_ch) {
-            atmosphere_state.time_started = time.time_since_startup().as_secs_f32();
-        }
-    }
-}
-fn fade_in_atmosphere(
-    time: Res<Time>,
-    audio: Res<Audio>,
-    mut audio_state: ResMut<AudioState>,
-    env_audio: Res<EnvironmentAudio>,
-) {
-    if let Some(atmosphere_ch) = &env_audio.atmosphere {
-        if let Some(atmosphere_state) = audio_state.channels.get_mut(atmosphere_ch) {
+            if atmosphere_state.stopped == true {
+                audio.play_looped_in_channel(audio_assets.atmosphere.clone(), atmosphere_ch);
+                atmosphere_state.time_started = time.time_since_startup().as_secs_f32();
+                atmosphere_state.stopped = false;
+            }
             let mut level = from_range(
                 0.0,
                 atmosphere_state.fade_in_time,
