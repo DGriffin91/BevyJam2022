@@ -36,29 +36,31 @@ fn menu_ui(
                         ref mut properties,
                         handle,
                     } => {
-                        if let Some(mat_props) = mat_props {
-                            *properties = mat_props;
-                            if let Some(mat) = custom_materials.get_mut(handle.clone()) {
-                                mat.material_properties = mat_props;
-                            }
-                        } else {
+                        if mat_props.is_none() {
                             ui.collapsing("material properties", |ui| {
                                 properties.build_ui(ui);
                             });
                             mat_props = Some(*properties);
                         }
+                        if let Some(mat_props) = mat_props {
+                            *properties = mat_props;
+                            if let Some(mat) = custom_materials.get_mut(handle.clone()) {
+                                mat.material_properties = mat_props;
+                            }
+                        }
                     }
                     LevelAsset::LightShaftMaterial { properties, handle } => {
+                        if shaft_props.is_none() {
+                            ui.collapsing("light shaft properties", |ui| {
+                                properties.build_ui(ui);
+                            });
+                            shaft_props = Some(*properties);
+                        }
                         if let Some(shaft_props) = shaft_props {
                             *properties = shaft_props;
                             if let Some(mat) = light_shaft_materials.get_mut(handle.clone()) {
                                 mat.material_properties = shaft_props;
                             }
-                        } else {
-                            ui.collapsing("light shaft properties", |ui| {
-                                properties.build_ui(ui);
-                            });
-                            shaft_props = Some(*properties);
                         }
                     }
                 };

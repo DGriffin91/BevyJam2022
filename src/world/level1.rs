@@ -90,7 +90,7 @@ fn setup_level_one(
         lightmap: MaterialSetProp {
             scale: 1.0,
             contrast: 2.3,
-            brightness: 3.1,
+            brightness: 2.5,
             blend: 1.0,
         },
         base_a: MaterialSetProp {
@@ -136,9 +136,9 @@ fn setup_level_one(
             blend: 1.0,
         },
         mist: MaterialSetProp {
-            scale: 0.032,
+            scale: 0.03,
             contrast: 1.0,
-            brightness: 1.0,
+            brightness: 0.5,
             blend: 1.0,
         },
         directional_light_blend: 0.6,
@@ -160,13 +160,13 @@ fn setup_level_one(
         shaft: MaterialSetProp {
             scale: 1.0,
             contrast: 1.9,
-            brightness: 7.0,
+            brightness: 8.0,
             blend: 1.0,
         },
         noise_a: MaterialSetProp {
-            scale: 0.5,
-            contrast: 5.7,
-            brightness: 17.5,
+            scale: 0.48,
+            contrast: 5.8,
+            brightness: 40.0,
             blend: 0.25,
         },
         noise_b: MaterialSetProp {
