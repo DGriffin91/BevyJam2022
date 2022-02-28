@@ -94,7 +94,7 @@ impl Default for PlayerBundle {
 }
 
 #[derive(Component, Default)]
-struct Player;
+pub struct Player;
 
 #[derive(Component, Default)]
 struct Footsteps {
@@ -102,7 +102,7 @@ struct Footsteps {
 }
 
 #[derive(Component, Default)]
-struct PlayerCam;
+pub struct PlayerCam;
 
 #[derive(Component)]
 struct PlayerPolyline;
