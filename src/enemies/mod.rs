@@ -48,7 +48,7 @@ fn enemies_look_at_player(
     if let Some(player_transform) = players.iter().next() {
         for mut enemy_transform in enemies.iter_mut() {
             let target = enemy_transform.looking_at(player_transform.translation, Vec3::Y);
-            enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.01);
+            enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.04);
         }
     }
 }
