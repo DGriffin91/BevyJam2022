@@ -104,8 +104,8 @@ impl Default for PlayerBundle {
 
 #[derive(Component)]
 pub struct Player {
-    pub health: u32,
-    pub max_health: u32,
+    pub health: i32,
+    pub max_health: i32,
 }
 
 impl Default for Player {
