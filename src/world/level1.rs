@@ -9,7 +9,7 @@ use heron::{
         nalgebra::Point3,
         rapier3d::{math::Real, prelude::ColliderBuilder},
     },
-    CollisionLayers, CollisionShape, CustomCollisionShape, PhysicMaterial, RigidBody,
+    CollisionLayers, CollisionShape, CustomCollisionShape, PhysicMaterial, PhysicsLayer, RigidBody,
 };
 
 use crate::{
@@ -282,7 +282,10 @@ fn setup_level_one(
                 properties: material_properties,
                 handle: material,
             })
-            .insert(CollisionLayers::all::<Layer>().with_group(Layer::World));
+            .insert(CollisionLayers::from_bits(
+                Layer::World.to_bits(),
+                Layer::all_bits(),
+            ));
     }
 
     //Bevy Sun

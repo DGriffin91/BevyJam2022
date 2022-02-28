@@ -44,6 +44,7 @@ impl Plugin for GamePlugin {
 
 #[derive(PhysicsLayer)]
 enum Layer {
+    Bullet,
     Enemy,
     Player,
     Raycast,
