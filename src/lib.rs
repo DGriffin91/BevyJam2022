@@ -3,6 +3,7 @@ use audio::GameAudioPlugin;
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_kira_audio::AudioPlugin;
 use bevy_polyline::PolylinePlugin;
+use bevy_tweening::TweeningPlugin;
 use console::ConsolePlugin;
 use enemies::EnemiesPlugin;
 use heron::{Gravity, PhysicsLayer, PhysicsPlugin};
@@ -29,6 +30,7 @@ impl Plugin for GamePlugin {
             .add_plugin(PolylinePlugin)
             .add_plugin(PhysicsPlugin::default())
             .insert_resource(Gravity::from(Vec3::new(0.0, -9.81, 0.0)))
+            .add_plugin(TweeningPlugin)
             // Game plugins
             .add_plugin(AssetsPlugin)
             .add_plugin(ConsolePlugin)
