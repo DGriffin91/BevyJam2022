@@ -23,6 +23,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputState>()
             .init_resource::<MovementSettings>()
+            .add_event::<PlayerEvent>()
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_player))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
@@ -36,6 +37,10 @@ impl Plugin for PlayerPlugin {
                     .with_system(footsteps),
             );
     }
+}
+
+pub enum PlayerEvent {
+    Hit,
 }
 
 /// Keeps track of mouse motion events, pitch, and yaw
@@ -80,12 +85,14 @@ struct PlayerBundle {
 impl Default for PlayerBundle {
     fn default() -> Self {
         PlayerBundle {
-            player: Player,
+            player: Player::default(),
             footsteps: Footsteps::default(),
             transform: Transform::from_xyz(0.0, 3.0, 0.0),
             global_tranform: GlobalTransform::default(),
             rigid_body: RigidBody::Dynamic,
-            collision_layers: CollisionLayers::new(Layer::Player, Layer::World),
+            collision_layers: CollisionLayers::none()
+                .with_group(Layer::Player)
+                .with_masks([Layer::Bullet, Layer::Enemy, Layer::World]),
             collision_shape: CollisionShape::Capsule {
                 half_segment: 1.0,
                 radius: 0.5,
@@ -95,8 +102,20 @@ impl Default for PlayerBundle {
     }
 }
 
-#[derive(Component, Default)]
-pub struct Player;
+#[derive(Component)]
+pub struct Player {
+    pub health: u32,
+    pub max_health: u32,
+}
+
+impl Default for Player {
+    fn default() -> Self {
+        Player {
+            health: 1000,
+            max_health: 1000,
+        }
+    }
+}
 
 #[derive(Component, Default)]
 struct Footsteps {
