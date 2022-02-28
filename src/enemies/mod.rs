@@ -36,7 +36,7 @@ trait EnemyBehaviour {
 fn spawn_enemies(mut commands: Commands, model_assets: Res<ModelAssets>) {
     OrbieEnemy::spawn(
         &mut commands,
-        Transform::from_xyz(0.0, 18.0, -10.0),
+        Transform::from_xyz(0.0, 18.0, -10.0).looking_at(Vec3::ZERO * -Vec3::X, Vec3::Y),
         &model_assets,
     );
 }
@@ -46,8 +46,9 @@ fn enemies_look_at_player(
     mut enemies: Query<&mut Transform, (With<Enemy>, Without<Player>)>,
 ) {
     if let Some(player_transform) = players.iter().next() {
-        for mut enemy in enemies.iter_mut() {
-            enemy.look_at(player_transform.translation, Vec3::Y);
+        for mut enemy_transform in enemies.iter_mut() {
+            let target = enemy_transform.looking_at(player_transform.translation, Vec3::Y);
+            enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.01);
         }
     }
 }
