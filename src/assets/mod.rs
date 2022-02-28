@@ -108,4 +108,6 @@ pub struct AudioAssets {
     pub footsteps: Vec<HandleUntyped>,
     #[asset(path = "audio/hurt", folder)]
     pub hurt: Vec<HandleUntyped>,
+    #[asset(path = "audio/weapons/lasergun", folder)]
+    pub lasergun: Vec<HandleUntyped>,
 }

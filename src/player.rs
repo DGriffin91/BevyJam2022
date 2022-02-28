@@ -41,6 +41,7 @@ impl Plugin for PlayerPlugin {
 
 pub enum PlayerEvent {
     Hit,
+    Fire,
 }
 
 /// Keeps track of mouse motion events, pitch, and yaw
@@ -314,6 +315,7 @@ fn player_fire(
         With<PlayerPolyline>,
     >,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
+    mut player_events: EventWriter<PlayerEvent>,
 ) {
     let window = windows.get_primary().unwrap();
     if !window.is_focused() || !window.cursor_locked() {
@@ -326,6 +328,21 @@ fn player_fire(
             let yaw = -state.yaw;
             let xz = f32::cos(pitch);
             let looking_dir = -Vec3::new(-xz * f32::sin(yaw), -f32::sin(pitch), xz * f32::cos(yaw));
+            player_events.send(PlayerEvent::Fire);
+
+            for (polyline, mut visibility, material, mut timer) in polylines_query.iter_mut() {
+                if let Some(polyline) = polylines.get_mut(&*polyline) {
+                    polyline.vertices[0] =
+                        weapon_transform.translation + weapon_transform.forward() * 0.6;
+                    polyline.vertices[1] =
+                        weapon_transform.translation + weapon_transform.forward() * 100.0;
+                }
+                if let Some(material) = polyline_materials.get_mut(material) {
+                    material.color.set_a(1.0);
+                }
+                visibility.is_visible = true;
+                timer.reset();
+            }
 
             if let Some(collision) = physics_world.ray_cast_with_filter(
                 cam_transform.translation,
@@ -336,19 +353,6 @@ fn player_fire(
                     .with_masks([Layer::World, Layer::Enemy]),
                 |_| true,
             ) {
-                for (polyline, mut visibility, material, mut timer) in polylines_query.iter_mut() {
-                    if let Some(polyline) = polylines.get_mut(&*polyline) {
-                        polyline.vertices[0] =
-                            weapon_transform.translation + weapon_transform.forward() * 0.6;
-                        polyline.vertices[1] = collision.collision_point;
-                    }
-                    if let Some(material) = polyline_materials.get_mut(material) {
-                        material.color.set_a(1.0);
-                    }
-                    visibility.is_visible = true;
-                    timer.reset();
-                }
-
                 let mesh = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
                 let material = materials.add(StandardMaterial {
                     base_color: Color::PINK,

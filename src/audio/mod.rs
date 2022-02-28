@@ -87,6 +87,15 @@ fn player_audio_events(
                     .typed::<AudioSource>();
                 audio.play(hurt_audio);
             }
+            PlayerEvent::Fire => {
+                let fire_audio = audio_assets
+                    .lasergun
+                    .choose(&mut rand::thread_rng())
+                    .unwrap()
+                    .clone()
+                    .typed::<AudioSource>();
+                audio.play(fire_audio);
+            }
         }
     }
 }
