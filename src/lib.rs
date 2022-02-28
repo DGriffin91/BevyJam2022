@@ -1,9 +1,9 @@
 use assets::AssetsPlugin;
 use audio::GameAudioPlugin;
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
-use bevy_egui::EguiPlugin;
 use bevy_kira_audio::AudioPlugin;
 use bevy_polyline::PolylinePlugin;
+use console::ConsolePlugin;
 use heron::{Gravity, PhysicsLayer, PhysicsPlugin};
 use player::PlayerPlugin;
 use ui::UiPlugin;
@@ -11,6 +11,7 @@ use world::WorldPlugin;
 
 mod assets;
 mod audio;
+mod console;
 mod player;
 mod ui;
 mod world;
@@ -22,13 +23,13 @@ impl Plugin for GamePlugin {
         app
             // External plugins
             .add_plugin(AudioPlugin)
-            .add_plugin(EguiPlugin)
             .add_plugin(FrameTimeDiagnosticsPlugin::default())
             .add_plugin(PolylinePlugin)
             .add_plugin(PhysicsPlugin::default())
             .insert_resource(Gravity::from(Vec3::new(0.0, -9.81, 0.0)))
             // Game plugins
             .add_plugin(AssetsPlugin)
+            .add_plugin(ConsolePlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(UiPlugin)
             .add_plugin(GameAudioPlugin)
