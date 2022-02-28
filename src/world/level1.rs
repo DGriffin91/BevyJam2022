@@ -318,4 +318,74 @@ fn setup_level_one(
         },
         ..Default::default()
     });
+
+    //Sky Light for Bevy PBR
+    commands.spawn_bundle(PointLightBundle {
+        transform: Transform::from_xyz(0.0, 5.0, -200.0),
+        point_light: PointLight {
+            intensity: 1000000.0,
+            range: 1000.0,
+            radius: 100.0,
+            color: Color::rgb(0.5, 0.45, 0.65),
+            shadows_enabled: false,
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+
+    // -----------------
+    // --- UNIT TEST ---
+    // -----------------
+
+    let unit1 = model_assets.unit1.clone();
+    commands
+        .spawn_bundle((
+            Transform::from_xyz(0.0, 18.0, -100.0),
+            GlobalTransform::identity(),
+        ))
+        .with_children(|parent| {
+            parent.spawn_scene(unit1.clone());
+        });
+    commands
+        .spawn_bundle((
+            Transform::from_xyz(5.0, 18.0, -100.0),
+            GlobalTransform::identity(),
+        ))
+        .with_children(|parent| {
+            parent.spawn_scene(unit1.clone());
+        });
+    commands
+        .spawn_bundle((
+            Transform::from_xyz(-5.0, 18.0, -100.0),
+            GlobalTransform::identity(),
+        ))
+        .with_children(|parent| {
+            parent.spawn_scene(unit1.clone());
+        });
+
+    let unit2 = model_assets.unit2.clone();
+    commands
+        .spawn_bundle((
+            Transform::from_xyz(0.0, 22.0, -120.0),
+            GlobalTransform::identity(),
+        ))
+        .with_children(|parent| {
+            parent.spawn_scene(unit2.clone());
+        });
+    commands
+        .spawn_bundle((
+            Transform::from_xyz(8.0, 22.0, -120.0),
+            GlobalTransform::identity(),
+        ))
+        .with_children(|parent| {
+            parent.spawn_scene(unit2.clone());
+        });
+    commands
+        .spawn_bundle((
+            Transform::from_xyz(-8.0, 22.0, -120.0),
+            GlobalTransform::identity(),
+        ))
+        .with_children(|parent| {
+            parent.spawn_scene(unit2.clone());
+        });
 }

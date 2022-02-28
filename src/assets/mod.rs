@@ -49,6 +49,7 @@ pub struct FontAssets {
 
 #[derive(AssetCollection)]
 pub struct ImageAssets {
+    // Shared Textures
     #[asset(path = "textures/concrete.jpg")]
     pub concrete: Handle<Image>,
     #[asset(path = "textures/concrete3.jpg")]
@@ -56,6 +57,7 @@ pub struct ImageAssets {
     #[asset(path = "textures/detail.jpg")]
     pub detail: Handle<Image>,
     #[asset(path = "textures/reflection.jpg")]
+    // Level pieces
     pub reflection: Handle<Image>,
     #[asset(path = "textures/level1/bake/large_ceiling_supports.jpg")]
     pub level1_large_ceiling_supports: Handle<Image>,
@@ -73,6 +75,7 @@ pub struct ImageAssets {
 
 #[derive(AssetCollection)]
 pub struct ModelAssets {
+    // Level pieces
     #[asset(path = "models/level1/large_ceiling_supports.gltf#Mesh0/Primitive0")]
     pub level1_large_ceiling_supports: Handle<Mesh>,
     #[asset(path = "models/level1/pillars.gltf#Mesh0/Primitive0")]
@@ -87,6 +90,14 @@ pub struct ModelAssets {
     pub level1_walls: Handle<Mesh>,
     #[asset(path = "models/level1/light_shafts.gltf#Mesh0/Primitive0")]
     pub level1_light_shafts: Handle<Mesh>,
+    // Units
+    #[asset(path = "models/units/unit1.glb#Scene0")]
+    pub unit1: Handle<Scene>,
+    #[asset(path = "models/units/unit2.glb#Scene0")]
+    pub unit2: Handle<Scene>,
+    // Weapons
+    #[asset(path = "models/weapons/lasergun.glb#Scene0")]
+    pub lasergun: Handle<Scene>,
 }
 
 #[derive(AssetCollection)]

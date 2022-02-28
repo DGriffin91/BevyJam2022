@@ -11,7 +11,7 @@ use heron::rapier_plugin::{PhysicsWorld, RigidBodyHandle};
 use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, RotationConstraints};
 use rand::prelude::SliceRandom;
 
-use crate::assets::{AudioAssets, GameState};
+use crate::assets::{AudioAssets, GameState, ModelAssets};
 use crate::Layer;
 
 /// Contains everything needed to add first-person fly camera behavior to your game
@@ -112,20 +112,32 @@ fn setup_player(
     mut commands: Commands,
     mut polylines: ResMut<Assets<Polyline>>,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
+    model_assets: Res<ModelAssets>,
 ) {
+    let lasergun = model_assets.lasergun.clone();
     commands
         .spawn_bundle(PlayerBundle::default())
         .with_children(|parent| {
             parent
                 .spawn_bundle(PerspectiveCameraBundle {
-                    transform: Transform::from_xyz(0.0, 1.5, 0.0),
+                    transform: Transform::from_xyz(0.0, 1.82, 0.0),
                     perspective_projection: PerspectiveProjection {
-                        fov: (80.0f32).to_radians(),
+                        fov: (75.0f32).to_radians(),
                         aspect_ratio: 1.0,
                         near: 0.1,
                         far: 1000.0,
                     },
                     ..Default::default()
+                })
+                .with_children(|parent| {
+                    parent
+                        .spawn_bundle((
+                            Transform::from_xyz(0.28, -0.14, -0.12),
+                            GlobalTransform::identity(),
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn_scene(lasergun.clone());
+                        });
                 })
                 .insert(PlayerCam);
         });
@@ -285,7 +297,7 @@ fn player_fire(
 
             if let Some(collision) = physics_world.ray_cast_with_filter(
                 cam_translation.translation,
-                looking_dir * 100.0,
+                looking_dir * 200.0,
                 true,
                 CollisionLayers::new(Layer::Raycast, Layer::World),
                 |_| true,
