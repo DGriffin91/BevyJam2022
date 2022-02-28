@@ -5,7 +5,10 @@ use crate::{
     player::Player,
 };
 
-use self::{bullet::BulletBundle, orbie::OrbieEnemy};
+use self::{
+    bullet::{disable_gravity_for_bullets, handle_bullet_collisions, BulletBundle},
+    orbie::OrbieEnemy,
+};
 
 mod bullet;
 mod orbie;
@@ -18,13 +21,23 @@ impl Plugin for EnemiesPlugin {
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
                     .with_system(enemies_look_at_player)
-                    .with_system(enemies_fire_at_player),
+                    .with_system(enemies_fire_at_player)
+                    .with_system(handle_bullet_collisions)
+                    .with_system(disable_gravity_for_bullets),
             );
     }
 }
 
 #[derive(Component)]
-pub struct Enemy;
+pub struct Enemy {
+    health: f32,
+}
+
+impl Default for Enemy {
+    fn default() -> Self {
+        Enemy { health: 1000.0 }
+    }
+}
 
 #[derive(Component)]
 pub struct EnemyLastFired(Timer);
@@ -47,7 +60,8 @@ fn enemies_look_at_player(
 ) {
     if let Some(player_transform) = players.iter().next() {
         for mut enemy_transform in enemies.iter_mut() {
-            let target = enemy_transform.looking_at(player_transform.translation, Vec3::Y);
+            let target =
+                enemy_transform.looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
             enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.04);
         }
     }
@@ -67,21 +81,22 @@ fn enemies_fire_at_player(
             commands
                 .spawn_bundle(BulletBundle::shoot(
                     transform.translation,
-                    transform.forward() * 10.0,
+                    transform.forward(),
                 ))
                 .with_children(|parent| {
                     // // Debug hit box
-                    let mesh = meshes.add(Mesh::from(shape::Cube { size: 0.25 }));
+                    let mesh = meshes.add(Mesh::from(shape::Icosphere {
+                        radius: 0.1,
+                        subdivisions: 1,
+                    }));
                     let material = materials.add(StandardMaterial {
-                        base_color: Color::rgb_u8(100, 50, 180),
-                        // alpha_mode: AlphaMode::Blend,
+                        base_color: Color::WHITE,
                         ..Default::default()
                     });
 
                     parent.spawn_bundle(PbrBundle {
                         mesh,
                         material,
-                        // visibility: Visibility { is_visible: false },
                         ..Default::default()
                     });
                 });

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody};
+use heron::{CollisionLayers, CollisionShape, PhysicMaterial, PhysicsLayer, RigidBody};
 
 use crate::{assets::ModelAssets, Layer};
 
@@ -14,13 +14,16 @@ impl EnemyBehaviour for OrbieEnemy {
             .spawn_bundle((transform, GlobalTransform::default()))
             .insert(RigidBody::Dynamic)
             .insert(CollisionShape::Sphere { radius: 2.7 })
-            .insert(CollisionLayers::all::<Layer>().with_group(Layer::Enemy))
+            .insert(CollisionLayers::from_bits(
+                Layer::Enemy.to_bits(),
+                Layer::all_bits(),
+            ))
             .insert(PhysicMaterial {
                 density: 0.0,
                 ..Default::default()
             })
             .insert(EnemyLastFired(Timer::from_seconds(0.8, true)))
-            .insert(Enemy)
+            .insert(Enemy::default())
             .insert(OrbieEnemy)
             .with_children(|parent| {
                 parent.spawn_scene(model_assets.unit2.clone());

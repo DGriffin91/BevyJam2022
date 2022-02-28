@@ -1,7 +1,11 @@
 use bevy::{prelude::*, utils::HashMap};
-use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin};
+use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin, AudioSource};
+use rand::prelude::SliceRandom;
 
-use crate::assets::{AudioAssets, GameState};
+use crate::{
+    assets::{AudioAssets, GameState},
+    player::PlayerEvent,
+};
 
 impl Plugin for GameAudioPlugin {
     fn build(&self, app: &mut App) {
@@ -12,7 +16,9 @@ impl Plugin for GameAudioPlugin {
                 SystemSet::on_enter(GameState::Playing).with_system(setup_audio_channels),
             )
             .add_system_set(
-                SystemSet::on_update(GameState::Playing).with_system(fade_in_atmosphere),
+                SystemSet::on_update(GameState::Playing)
+                    .with_system(fade_in_atmosphere)
+                    .with_system(player_audio_events),
             );
     }
 }
@@ -61,6 +67,26 @@ fn fade_in_atmosphere(
             level *= db_to_lin(atmosphere_state.final_volume);
             atmosphere_state.volume = level;
             audio.set_volume_in_channel(atmosphere_state.volume, atmosphere_ch);
+        }
+    }
+}
+
+fn player_audio_events(
+    mut player_events: EventReader<PlayerEvent>,
+    audio: Res<Audio>,
+    audio_assets: Res<AudioAssets>,
+) {
+    for player_event in player_events.iter() {
+        match player_event {
+            PlayerEvent::Hit => {
+                let hurt_audio = audio_assets
+                    .hurt
+                    .choose(&mut rand::thread_rng())
+                    .unwrap()
+                    .clone()
+                    .typed::<AudioSource>();
+                audio.play(hurt_audio);
+            }
         }
     }
 }
