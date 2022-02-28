@@ -4,6 +4,7 @@ use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_kira_audio::AudioPlugin;
 use bevy_polyline::PolylinePlugin;
 use console::ConsolePlugin;
+use enemies::EnemiesPlugin;
 use heron::{Gravity, PhysicsLayer, PhysicsPlugin};
 use player::PlayerPlugin;
 use ui::UiPlugin;
@@ -12,6 +13,7 @@ use world::WorldPlugin;
 mod assets;
 mod audio;
 mod console;
+mod enemies;
 mod player;
 mod ui;
 mod world;
@@ -30,19 +32,22 @@ impl Plugin for GamePlugin {
             // Game plugins
             .add_plugin(AssetsPlugin)
             .add_plugin(ConsolePlugin)
+            .add_plugin(EnemiesPlugin)
+            .add_plugin(GameAudioPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(UiPlugin)
-            .add_plugin(GameAudioPlugin)
             .add_plugin(WorldPlugin)
+            // Main systems
             .add_startup_system(center_mouse_startup);
     }
 }
 
 #[derive(PhysicsLayer)]
 enum Layer {
+    Enemy,
     Player,
-    World,
     Raycast,
+    World,
 }
 
 fn center_mouse_startup(mut windows: ResMut<Windows>) {

@@ -299,7 +299,9 @@ fn player_fire(
                 cam_translation.translation,
                 looking_dir * 200.0,
                 true,
-                CollisionLayers::new(Layer::Raycast, Layer::World),
+                CollisionLayers::none()
+                    .with_group(Layer::Raycast)
+                    .with_masks([Layer::World, Layer::Enemy]),
                 |_| true,
             ) {
                 for (polyline, mut visibility, mut timer) in polylines_query.iter_mut() {
