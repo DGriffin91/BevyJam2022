@@ -102,7 +102,7 @@ struct Footsteps {
 }
 
 #[derive(Component, Default)]
-struct PlayerCam;
+pub struct PlayerCam;
 
 #[derive(Component)]
 struct PlayerPolyline;
@@ -375,6 +375,10 @@ fn cursor_grab(keys: Res<Input<KeyCode>>, mut windows: ResMut<Windows>) {
 
 /// Grabs/ungrabs mouse cursor
 fn toggle_grab_cursor(window: &mut Window) {
+    if !window.is_focused() || !window.cursor_locked() {
+        window.set_cursor_position(Vec2::new(window.width() / 4.0, window.height() / 4.0));
+    }
+
     window.set_cursor_lock_mode(!window.cursor_locked());
     window.set_cursor_visibility(!window.cursor_visible());
 }
