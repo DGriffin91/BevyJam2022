@@ -32,7 +32,8 @@ impl Plugin for GamePlugin {
             .add_plugin(PlayerPlugin)
             .add_plugin(UiPlugin)
             .add_plugin(GameAudioPlugin)
-            .add_plugin(WorldPlugin);
+            .add_plugin(WorldPlugin)
+            .add_startup_system(center_mouse_startup);
     }
 }
 
@@ -41,4 +42,12 @@ enum Layer {
     Player,
     World,
     Raycast,
+}
+
+fn center_mouse_startup(mut windows: ResMut<Windows>) {
+    let window = windows.get_primary_mut().unwrap();
+    window.set_cursor_position(Vec2::new(window.width() / 4.0, window.height() / 4.0));
+
+    window.set_cursor_lock_mode(true);
+    window.set_cursor_visibility(false);
 }
