@@ -172,7 +172,7 @@ fn setup_player(
                 vertices: vec![Vec3::ZERO, Vec3::ZERO],
             }),
             material: polyline_materials.add(PolylineMaterial {
-                width: 12.0,
+                width: 30.0,
                 color: Color::RED,
                 perspective: true,
             }),
@@ -210,44 +210,55 @@ fn player_move(
     time: Res<Time>,
     windows: Res<Windows>,
     settings: Res<MovementSettings>,
-    mut query: Query<(Entity, &mut Transform), With<Player>>,
+    mut rigid_bodies: ResMut<RigidBodySet>,
+    mut query: Query<(Entity, &mut Transform, &RigidBodyHandle), With<Player>>,
     mut footsteps: Query<&mut Footsteps>,
 ) {
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
-        for (entity, mut transform) in query.iter_mut() {
-            let mut velocity = Vec3::ZERO;
-            let local_z = transform.local_z();
-            let local_z_y = if settings.lock_y { 0.0 } else { local_z.y };
-            let forward = -Vec3::new(local_z.x, local_z_y, local_z.z);
-            let right = Vec3::new(local_z.z, 0.0, -local_z.x);
-            let mut run = 1.0;
+        for (entity, transform, rb) in query.iter_mut() {
+            if let Some(body) = rigid_bodies.get_mut(rb.into_rapier()) {
+                let mut velocity = Vec3::ZERO;
+                let local_z = transform.local_z();
+                let local_z_y = if settings.lock_y { 0.0 } else { local_z.y };
+                let forward = -Vec3::new(local_z.x, local_z_y, local_z.z);
+                let right = Vec3::new(local_z.z, 0.0, -local_z.x);
+                let mut run = 1.0;
 
-            let mut moving_forward = false;
-            for key in keys.get_pressed() {
-                match key {
-                    KeyCode::W => {
-                        velocity += forward;
-                        moving_forward = true;
+                let mut moving_forward = false;
+                for key in keys.get_pressed() {
+                    match key {
+                        KeyCode::W => {
+                            velocity += forward;
+                            moving_forward = true;
+                        }
+                        KeyCode::S => velocity -= forward,
+                        KeyCode::A => velocity -= right,
+                        KeyCode::D => velocity += right,
+                        _ => (),
                     }
-                    KeyCode::S => velocity -= forward,
-                    KeyCode::A => velocity -= right,
-                    KeyCode::D => velocity += right,
-                    _ => (),
                 }
-            }
 
-            for key in keys.get_pressed() {
-                if key == &KeyCode::LShift && moving_forward {
-                    run = settings.run_multiplier
+                for key in keys.get_pressed() {
+                    if key == &KeyCode::LShift && moving_forward {
+                        run = settings.run_multiplier
+                    }
                 }
-            }
 
-            let move_delta = velocity * time.delta_seconds() * run * settings.speed;
-            transform.translation += move_delta;
-            if let Ok(mut footsteps) = footsteps.get_component_mut::<Footsteps>(entity) {
-                let abs_move_delta = move_delta.abs();
-                footsteps.move_distance += abs_move_delta.x.max(abs_move_delta.z);
+                let mut move_delta = velocity.normalize_or_zero()
+                    * time.delta_seconds()
+                    * run
+                    * settings.speed
+                    * 100.0;
+
+                move_delta = Vec3::new(body.linvel().x, 0.0, body.linvel().z).lerp(move_delta, 0.2);
+
+                body.set_linvel([move_delta.x, body.linvel().y, move_delta.z].into(), false);
+
+                if let Ok(mut footsteps) = footsteps.get_component_mut::<Footsteps>(entity) {
+                    let abs_move_delta = move_delta.abs();
+                    footsteps.move_distance += abs_move_delta.x.max(abs_move_delta.z);
+                }
             }
         }
     }
