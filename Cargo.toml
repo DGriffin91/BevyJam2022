@@ -21,6 +21,7 @@ bevy_egui = "0.11"
 bevy_polyline = "0.1"
 bevy_tweening = "0.3"
 heron = { version = "2.0", features = ["3d"] }
+pathfinding = "3.0"
 rand = "0.8"
 bevy_kira_audio = "0.8"
 bitflags = "1.3"

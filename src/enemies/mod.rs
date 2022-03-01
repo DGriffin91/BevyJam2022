@@ -1,4 +1,11 @@
+use std::{
+    cmp::Ordering,
+    hash::{Hash, Hasher},
+};
+
 use bevy::prelude::*;
+use pathfinding::directed::astar::astar;
+use rand::Rng;
 
 use crate::{
     assets::{GameState, ModelAssets},
@@ -13,18 +20,116 @@ use self::{
 mod bullet;
 mod orbie;
 
+#[derive(Component)]
+pub struct Waypoint;
+
 pub struct EnemiesPlugin;
 
 impl Plugin for EnemiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(spawn_enemies))
+        app.insert_resource(WaypointTimer(Timer::from_seconds(2.0, false)))
+            .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(spawn_enemies))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
                     .with_system(enemies_look_at_player)
                     .with_system(enemies_fire_at_player)
                     .with_system(handle_bullet_collisions)
-                    .with_system(disable_gravity_for_bullets),
+                    .with_system(disable_gravity_for_bullets)
+                    .with_system(waypoint_debug),
             );
+    }
+}
+
+struct WaypointTimer(Timer);
+
+fn waypoint_debug(
+    time: Res<Time>,
+    mut waypoint_timer: ResMut<WaypointTimer>,
+    mut waypoints: Query<(Entity, &Transform, &mut Handle<StandardMaterial>), With<Waypoint>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    waypoint_timer.0.tick(time.delta());
+    if !waypoint_timer.0.just_finished() {
+        return;
+    }
+
+    let mut original_waypoints: Vec<_> = waypoints.iter_mut().collect();
+    let mut waypoints: Vec<_> = original_waypoints
+        .iter()
+        .map(|(ent, transform, _)| WaypointForPathfinding {
+            entity: *ent,
+            pos: transform.translation,
+        })
+        .collect();
+    if waypoints.len() <= 1 {
+        error!("need at least 2 waypoints");
+        return;
+    }
+
+    let mut rng = rand::thread_rng();
+    let start_index: usize = rng.gen_range(0..waypoints.len());
+    let end_index = loop {
+        let end_index: usize = rng.gen_range(0..waypoints.len());
+        if end_index != start_index {
+            break end_index;
+        }
+    };
+
+    let end = waypoints.get(end_index).unwrap();
+
+    let path = astar(
+        waypoints.get(start_index).unwrap(),
+        |waypoint| {
+            let mut successors = waypoints
+                .clone()
+                .into_iter()
+                .filter(|other| waypoint != other)
+                .map(|other| (other, waypoint.pos.distance(other.pos) as i32))
+                .collect::<Vec<_>>();
+            successors.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
+            successors.truncate(8);
+
+            successors
+        },
+        |waypoint| waypoint.pos.distance(end.pos) as i32,
+        |waypoint| waypoint == end,
+    )
+    .unwrap()
+    .0;
+
+    let material = materials.add(StandardMaterial {
+        base_color: Color::RED,
+        ..Default::default()
+    });
+
+    println!("{}", path.len());
+
+    for waypoint in path {
+        let waypoint = original_waypoints
+            .iter_mut()
+            .find(|(entity, ..)| waypoint.entity == *entity)
+            .unwrap();
+        *waypoint.2 = material.clone();
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct WaypointForPathfinding {
+    entity: Entity,
+    pos: Vec3,
+}
+
+impl PartialEq for WaypointForPathfinding {
+    fn eq(&self, other: &Self) -> bool {
+        self.entity == other.entity
+    }
+}
+
+impl Eq for WaypointForPathfinding {}
+
+impl Hash for WaypointForPathfinding {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.entity.hash(state)
     }
 }
 
