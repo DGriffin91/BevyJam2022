@@ -10,7 +10,7 @@ use heron::{
         nalgebra::Point3,
         rapier3d::{math::Real, prelude::ColliderBuilder},
     },
-    CollisionLayers, CollisionShape, CustomCollisionShape, PhysicMaterial, PhysicsLayer, RigidBody,
+    CollisionLayers, CollisionShape, CustomCollisionShape, PhysicMaterial, RigidBody,
 };
 
 use crate::{
@@ -73,7 +73,12 @@ fn spawn_demo_cubes(
             .insert(PhysicMaterial {
                 restitution: 0.7,
                 ..Default::default()
-            });
+            })
+            .insert(
+                CollisionLayers::none()
+                    .with_group(Layer::World)
+                    .with_masks(Layer::all()),
+            );
     }
 }
 
@@ -235,7 +240,7 @@ fn setup_level_one(
             })
             .insert(LevelAsset::LightShaftMaterial {
                 properties: light_shaft_material_props,
-                handle: light_shaft_material.clone(),
+                handle: light_shaft_material,
             });
     }
 
@@ -311,10 +316,11 @@ fn setup_level_one(
                 properties: material_properties,
                 handle: material,
             })
-            .insert(CollisionLayers::from_bits(
-                Layer::World.to_bits(),
-                Layer::all_bits(),
-            ));
+            .insert(
+                CollisionLayers::none()
+                    .with_group(Layer::World)
+                    .with_masks(Layer::all()),
+            );
     }
     if preferences.dynamic_shadows {
         //Bevy Sun

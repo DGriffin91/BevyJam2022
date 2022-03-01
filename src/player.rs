@@ -3,11 +3,9 @@ use std::time::Duration;
 use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
-use bevy::reflect::List;
 use bevy_kira_audio::{Audio, AudioSource};
 use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial};
 use heron::rapier_plugin::convert::IntoRapier;
-use heron::rapier_plugin::nalgebra::ComplexField;
 use heron::rapier_plugin::rapier3d::prelude::RigidBodySet;
 use heron::rapier_plugin::{PhysicsWorld, RigidBodyHandle};
 use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, RotationConstraints};
@@ -374,7 +372,12 @@ fn player_fire(
                     .insert(PhysicMaterial {
                         restitution: 0.7,
                         ..Default::default()
-                    });
+                    })
+                    .insert(
+                        CollisionLayers::none()
+                            .with_group(Layer::World)
+                            .with_masks(Layer::all()),
+                    );
             }
         }
     }

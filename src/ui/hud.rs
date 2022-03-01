@@ -11,26 +11,18 @@ impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_health_bar))
             .add_system_set(
-                SystemSet::on_update(GameState::Playing).with_system(update_health_bar), // .with_system(update_health_bar_style),
+                SystemSet::on_update(GameState::Playing).with_system(update_health_bar),
             );
     }
 }
 
 #[derive(Component)]
-struct HealthBar {
-    percent: f32,
-}
+struct HealthBar;
 
 struct HealthBarLens {
     start: f32,
     end: f32,
 }
-
-// impl Lens<HealthBar> for HealthBarLens {
-//     fn lerp(&mut self, target: &mut HealthBar, ratio: f32) {
-//         target.percent = self.start + (self.end - self.start) * ratio;
-//     }
-// }
 
 impl Lens<Style> for HealthBarLens {
     fn lerp(&mut self, target: &mut Style, ratio: f32) {
@@ -79,12 +71,11 @@ fn setup_health_bar(mut commands: Commands) {
                         end: 100.0,
                     },
                 )))
-                .insert(HealthBar { percent: 100.0 });
+                .insert(HealthBar);
         });
 }
 
 fn update_health_bar(
-    mut commands: Commands,
     players: Query<&Player, Changed<Player>>,
     mut health_bars: Query<(&mut Animator<Style>, &Style), With<HealthBar>>,
 ) {
@@ -93,7 +84,6 @@ fn update_health_bar(
             if let Val::Percent(width) = style.size.width {
                 let health_percent = *health as f32 / *max_health as f32;
 
-                // let mut tweenable = animator.tweenable_mut().unwrap();
                 animator.set_tweenable(Tween::new(
                     EaseFunction::QuadraticOut,
                     TweeningType::Once,
@@ -104,36 +94,6 @@ fn update_health_bar(
                     },
                 ));
             }
-
-            // println!("Insert");
-
-            // let pp = Animator::new(Tween::new(
-            //     EaseFunction::QuadraticOut,
-            //     TweeningType::Once,
-            //     Duration::from_millis(500),
-            //     HealthBarLens {
-            //         start: health_bar.percent,
-            //         end: health_percent * 100.0,
-            //     },
-            // ));
-
-            // commands.entity(entity).insert(Animator::new(Tween::new(
-            //     EaseFunction::QuadraticOut,
-            //     TweeningType::Once,
-            //     Duration::from_millis(500),
-            //     HealthBarLens {
-            //         start: health_bar.percent,
-            //         end: health_percent * 100.0,
-            //     },
-            // )));
-            // style.size.width = Val::Percent(health_percent * 100.0);
         }
     }
 }
-
-// fn update_health_bar_style(mut health_bars: Query<(&HealthBar, &mut Style), Changed<HealthBar>>) {
-//     for (HealthBar { percent }, mut style) in health_bars.iter_mut() {
-//         println!("{}", percent);
-//         style.size.width = Val::Percent(*percent);
-//     }
-// }

@@ -63,7 +63,6 @@ pub fn disable_gravity_for_bullets(
 pub fn handle_bullet_collisions(
     mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
-    bullets: Query<Entity, With<Bullet>>,
     mut players: Query<(Entity, &mut Player)>,
     mut player_events: EventWriter<PlayerEvent>,
 ) {
@@ -89,9 +88,7 @@ pub fn handle_bullet_collisions(
                     }
                 }
 
-                commands
-                    .entity(bullet.rigid_body_entity())
-                    .despawn_recursive();
+                commands.entity(bullet_ent).despawn_recursive();
             }
             CollisionEvent::Stopped(..) => {}
         }
