@@ -19,9 +19,9 @@ impl Plugin for ScoreboardPlugin {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ScoreboardEvent {
-    Hit,
-    Miss,
-    Reset,
+    _Hit,
+    _Miss,
+    _Reset,
 }
 
 #[derive(Component, Default)]
@@ -88,13 +88,13 @@ fn handle_scoreboard_event(
     for mut scoreboard in scoreboards.iter_mut() {
         for event in events.iter() {
             match event {
-                ScoreboardEvent::Hit => {
+                ScoreboardEvent::_Hit => {
                     scoreboard.hits += 1;
                 }
-                ScoreboardEvent::Miss => {
+                ScoreboardEvent::_Miss => {
                     scoreboard.misses += 1;
                 }
-                ScoreboardEvent::Reset => {
+                ScoreboardEvent::_Reset => {
                     scoreboard.hits = 0;
                     scoreboard.misses = 0;
                 }

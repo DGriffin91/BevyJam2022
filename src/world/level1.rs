@@ -10,7 +10,7 @@ use heron::{
         nalgebra::Point3,
         rapier3d::{math::Real, prelude::ColliderBuilder},
     },
-    CollisionLayers, CollisionShape, CustomCollisionShape, PhysicMaterial, PhysicsLayer, RigidBody,
+    CollisionLayers, CollisionShape, CustomCollisionShape, PhysicMaterial, RigidBody,
 };
 
 use crate::{

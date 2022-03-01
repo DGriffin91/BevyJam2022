@@ -30,12 +30,12 @@ impl Plugin for EnemiesPlugin {
 
 #[derive(Component)]
 pub struct Enemy {
-    health: f32,
+    _health: f32,
 }
 
 impl Default for Enemy {
     fn default() -> Self {
-        Enemy { health: 1000.0 }
+        Enemy { _health: 1000.0 }
     }
 }
 
