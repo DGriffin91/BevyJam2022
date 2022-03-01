@@ -73,7 +73,12 @@ fn spawn_demo_cubes(
             .insert(PhysicMaterial {
                 restitution: 0.7,
                 ..Default::default()
-            });
+            })
+            .insert(
+                CollisionLayers::none()
+                    .with_group(Layer::World)
+                    .with_masks(Layer::all()),
+            );
     }
 }
 
@@ -324,10 +329,11 @@ fn setup_level_one(
                 properties: material_properties,
                 handle: material,
             })
-            .insert(CollisionLayers::from_bits(
-                Layer::World.to_bits(),
-                Layer::all_bits(),
-            ));
+            .insert(
+                CollisionLayers::none()
+                    .with_group(Layer::World)
+                    .with_masks(Layer::all()),
+            );
     }
     if preferences.dynamic_shadows {
         //Bevy Sun

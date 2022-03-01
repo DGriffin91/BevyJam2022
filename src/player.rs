@@ -374,7 +374,12 @@ fn player_fire(
                     .insert(PhysicMaterial {
                         restitution: 0.7,
                         ..Default::default()
-                    });
+                    })
+                    .insert(
+                        CollisionLayers::none()
+                            .with_group(Layer::World)
+                            .with_masks(Layer::all()),
+                    );
             }
         }
     }

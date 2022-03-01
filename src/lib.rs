@@ -53,6 +53,18 @@ enum Layer {
     World,
 }
 
+impl Layer {
+    fn all() -> [Layer; 5] {
+        [
+            Layer::Bullet,
+            Layer::Enemy,
+            Layer::Player,
+            Layer::Raycast,
+            Layer::World,
+        ]
+    }
+}
+
 fn mouse_startup(mut windows: ResMut<Windows>) {
     let window = windows.get_primary_mut().unwrap();
     window.set_cursor_lock_mode(false);
