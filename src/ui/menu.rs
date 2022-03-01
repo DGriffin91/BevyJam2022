@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use bevy_asset_loader::AssetKeys;
-use bevy_egui::{egui, EguiContext};
+use bevy_egui::{
+    egui::{self, Align2, FontDefinitions},
+    EguiContext,
+};
 
 use crate::{
     assets::{
@@ -33,8 +36,18 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_update(GameState::Menu).with_system(startup_menu))
             .add_system_set(SystemSet::on_update(GameState::Playing).with_system(menu_ui))
-            .insert_resource(GamePreferences::default());
+            .insert_resource(GamePreferences::default())
+            .add_startup_system(setup_fonts);
     }
+}
+
+pub fn setup_fonts(mut egui_context: ResMut<EguiContext>) {
+    let mut fonts = FontDefinitions::default();
+
+    for (_text_style, (_family, size)) in fonts.family_and_size.iter_mut() {
+        *size = 25.0;
+    }
+    egui_context.ctx_mut().set_fonts(fonts);
 }
 
 fn startup_menu(
@@ -45,25 +58,41 @@ fn startup_menu(
     asset_keys: ResMut<AssetKeys>,
 ) {
     let window = windows.get_primary_mut().unwrap();
+
     if window.is_focused() && !window.cursor_locked() {
-        egui::Window::new("GAME").show(egui_context.ctx_mut(), |ui| {
-            if ui.button("START").clicked() {
-                level1::set_textures_res(asset_keys, preferences.high_res_textures);
-                state
-                    .set(GameState::Loading)
-                    .expect("Failed to change state");
-                window.set_cursor_position(Vec2::new(window.width() / 4.0, window.height() / 4.0));
-                window.set_cursor_lock_mode(true);
-                window.set_cursor_visibility(false);
-            }
-            ui.checkbox(
-                &mut preferences.high_res_textures,
-                "High resolution textures",
-            );
-            ui.checkbox(&mut preferences.light_shafts, "Light shafts enabled");
-            ui.checkbox(&mut preferences.dynamic_shadows, "Dynamic shadows enabled");
-            ui.checkbox(&mut preferences.potato, "Potato Mode");
-        });
+        egui::Window::new("GAME")
+            .resizable(false)
+            .collapsible(false)
+            .current_pos([
+                (window.physical_width() / 2) as f32,
+                (window.physical_height() / 2) as f32,
+            ])
+            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(egui_context.ctx_mut(), |ui| {
+                ui.vertical_centered_justified(|ui| {
+                    if ui.button("START").clicked() {
+                        level1::set_textures_res(asset_keys, preferences.high_res_textures);
+                        state
+                            .set(GameState::Loading)
+                            .expect("Failed to change state");
+                        window.set_cursor_position(Vec2::new(
+                            window.width() / 4.0,
+                            window.height() / 4.0,
+                        ));
+                        window.set_cursor_lock_mode(true);
+                        window.set_cursor_visibility(false);
+                    }
+                });
+                ui.collapsing("Preferences", |ui| {
+                    ui.checkbox(
+                        &mut preferences.high_res_textures,
+                        "High resolution textures",
+                    );
+                    ui.checkbox(&mut preferences.light_shafts, "Light shafts enabled");
+                    ui.checkbox(&mut preferences.dynamic_shadows, "Dynamic shadows enabled");
+                    ui.checkbox(&mut preferences.potato, "Potato Mode");
+                })
+            });
     }
 }
 
