@@ -26,6 +26,7 @@ use crate::{
         custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp},
         GameState, ImageAssets,
     },
+    enemies::Waypoint,
     ui::menu::GamePreferences,
     Layer,
 };
@@ -491,11 +492,13 @@ fn spawn_waypoints(
     });
 
     for pos in waypoints {
-        commands.spawn_bundle(PbrBundle {
-            mesh: mesh.clone(),
-            material: material.clone(),
-            transform: Transform::from_xyz(pos.x, pos.y, pos.z),
-            ..Default::default()
-        });
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: mesh.clone(),
+                material: material.clone(),
+                transform: Transform::from_xyz(pos.x, pos.y, pos.z),
+                ..Default::default()
+            })
+            .insert(Waypoint);
     }
 }
