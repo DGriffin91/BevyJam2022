@@ -18,6 +18,7 @@ impl Plugin for ScoreboardPlugin {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(clippy::enum_variant_names)] // TODO: Remove this when the scoreboard starts being used
 pub enum ScoreboardEvent {
     _Hit,
     _Miss,

@@ -240,7 +240,7 @@ fn setup_level_one(
             })
             .insert(LevelAsset::LightShaftMaterial {
                 properties: light_shaft_material_props,
-                handle: light_shaft_material.clone(),
+                handle: light_shaft_material,
             });
     }
 
