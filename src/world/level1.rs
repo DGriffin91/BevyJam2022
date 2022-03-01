@@ -237,19 +237,6 @@ fn setup_level_one(
                 properties: light_shaft_material_props,
                 handle: light_shaft_material.clone(),
             });
-        commands
-            .spawn()
-            .insert_bundle(MaterialMeshBundle {
-                mesh: light_shaft_model.clone(),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0)
-                    .with_scale(Vec3::new(-1.0, -1.0, -1.0)),
-                material: light_shaft_material.clone(),
-                ..Default::default()
-            })
-            .insert(LevelAsset::LightShaftMaterial {
-                properties: light_shaft_material_props,
-                handle: light_shaft_material,
-            });
     }
 
     for (model, lightbake) in [
