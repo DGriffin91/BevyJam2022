@@ -1624,6 +1624,7 @@ dependencies = [
  "bevy_kira_audio",
  "bevy_polyline",
  "bevy_tweening",
+ "bitflags",
  "heron",
  "rand",
 ]

@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
     render::mesh::{Indices, VertexAttributeValues},
 };
+use bevy_asset_loader::{AssetKeys, DynamicAsset};
 use heron::{
     rapier_plugin::{
         nalgebra::Point3,
@@ -14,16 +15,18 @@ use heron::{
 
 use crate::{
     assets::{
-        custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp},
-        GameState, ImageAssets,
-    },
-    assets::{
+        custom_material::CustomMaterialFlags,
         emissive_material::EmissiveMaterial,
         light_shaft_material::{
             update_light_shaft_material_time, LightShaftMaterial, LightShaftProperties,
         },
         ModelAssets,
     },
+    assets::{
+        custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp},
+        GameState, ImageAssets,
+    },
+    ui::menu::GamePreferences,
     Layer,
 };
 
@@ -73,6 +76,33 @@ fn spawn_demo_cubes(
     }
 }
 
+pub fn set_textures_res(mut asset_keys: ResMut<AssetKeys>, high_res: bool) {
+    let sm = if high_res { "" } else { "sm/" };
+    for s in [
+        "large_ceiling_supports",
+        "pillars",
+        "sky_box",
+        "spheres_base",
+        "spheres",
+        "walls",
+    ] {
+        asset_keys.register_asset(
+            &format!("level1_{}", s),
+            DynamicAsset::File {
+                path: format!("textures/level1/bake/{}{}.jpg", sm, s),
+            },
+        );
+    }
+    for s in ["concrete", "concrete3", "detail", "reflection"] {
+        asset_keys.register_asset(
+            s,
+            DynamicAsset::File {
+                path: format!("textures/{}{}.jpg", sm, s),
+            },
+        );
+    }
+}
+
 fn setup_level_one(
     mut commands: Commands,
     mesh_assets: Res<Assets<Mesh>>,
@@ -81,12 +111,20 @@ fn setup_level_one(
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
     mut emissive_materials: ResMut<Assets<EmissiveMaterial>>,
     mut light_shaft_materials: ResMut<Assets<LightShaftMaterial>>,
+    preferences: Res<GamePreferences>,
 ) {
     let variation_texture = image_assets.detail.clone();
     let base_texture = image_assets.concrete.clone();
     let walls_texture = image_assets.concrete3.clone();
     let reflection_texture = image_assets.reflection.clone();
 
+    let mut flags = CustomMaterialFlags::NONE;
+    if preferences.dynamic_shadows {
+        flags |= CustomMaterialFlags::SHADOWS;
+    }
+    if preferences.potato {
+        flags |= CustomMaterialFlags::POTATO;
+    }
     let material_properties = MaterialProperties {
         lightmap: MaterialSetProp {
             scale: 1.0,
@@ -143,6 +181,7 @@ fn setup_level_one(
             blend: 1.0,
         },
         directional_light_blend: 0.6,
+        flags: flags.bits(),
     };
 
     let skybox_model = model_assets.level1_sky_box.clone();
@@ -156,59 +195,61 @@ fn setup_level_one(
         }),
         ..Default::default()
     });
-
-    let light_shaft_material_props = LightShaftProperties {
-        shaft: MaterialSetProp {
-            scale: 1.0,
-            contrast: 1.9,
-            brightness: 8.0,
-            blend: 1.0,
-        },
-        noise_a: MaterialSetProp {
-            scale: 1.0,
-            contrast: 5.8,
-            brightness: 40.0,
-            blend: 0.25,
-        },
-        noise_b: MaterialSetProp {
-            scale: 0.00048,
-            contrast: 1.3,
-            brightness: 3.6,
-            blend: 1.0,
-        },
-        speed: Vec3::new(-0.004, -0.01, 0.0),
-        color_tint: Vec3::new(1.0, 0.783, 0.57),
-        time: 0.0,
-    };
-    let light_shaft_material = light_shaft_materials.add(LightShaftMaterial {
-        noise_texture: Some(variation_texture.clone()),
-        material_properties: light_shaft_material_props,
-    });
-    let light_shaft_model = &model_assets.level1_light_shafts;
-    commands
-        .spawn()
-        .insert_bundle(MaterialMeshBundle {
-            mesh: light_shaft_model.clone(),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            material: light_shaft_material.clone(),
-            ..Default::default()
-        })
-        .insert(LevelAsset::LightShaftMaterial {
-            properties: light_shaft_material_props,
-            handle: light_shaft_material.clone(),
+    if preferences.light_shafts {
+        let light_shaft_material_props = LightShaftProperties {
+            shaft: MaterialSetProp {
+                scale: 1.0,
+                contrast: 1.9,
+                brightness: 8.0,
+                blend: 1.0,
+            },
+            noise_a: MaterialSetProp {
+                scale: 1.0,
+                contrast: 5.8,
+                brightness: 40.0,
+                blend: 0.25,
+            },
+            noise_b: MaterialSetProp {
+                scale: 0.00048,
+                contrast: 1.3,
+                brightness: 3.6,
+                blend: 1.0,
+            },
+            speed: Vec3::new(-0.004, -0.01, 0.0),
+            color_tint: Vec3::new(1.0, 0.783, 0.57),
+            time: 0.0,
+        };
+        let light_shaft_material = light_shaft_materials.add(LightShaftMaterial {
+            noise_texture: Some(variation_texture.clone()),
+            material_properties: light_shaft_material_props,
         });
-    commands
-        .spawn()
-        .insert_bundle(MaterialMeshBundle {
-            mesh: light_shaft_model.clone(),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::new(-1.0, -1.0, -1.0)),
-            material: light_shaft_material.clone(),
-            ..Default::default()
-        })
-        .insert(LevelAsset::LightShaftMaterial {
-            properties: light_shaft_material_props,
-            handle: light_shaft_material,
-        });
+        let light_shaft_model = &model_assets.level1_light_shafts;
+        commands
+            .spawn()
+            .insert_bundle(MaterialMeshBundle {
+                mesh: light_shaft_model.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                material: light_shaft_material.clone(),
+                ..Default::default()
+            })
+            .insert(LevelAsset::LightShaftMaterial {
+                properties: light_shaft_material_props,
+                handle: light_shaft_material.clone(),
+            });
+        commands
+            .spawn()
+            .insert_bundle(MaterialMeshBundle {
+                mesh: light_shaft_model.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0)
+                    .with_scale(Vec3::new(-1.0, -1.0, -1.0)),
+                material: light_shaft_material.clone(),
+                ..Default::default()
+            })
+            .insert(LevelAsset::LightShaftMaterial {
+                properties: light_shaft_material_props,
+                handle: light_shaft_material,
+            });
+    }
 
     for (model, lightbake) in [
         (
@@ -287,40 +328,41 @@ fn setup_level_one(
                 Layer::all_bits(),
             ));
     }
-
-    //Bevy Sun
-    let size: f32 = 100.0;
-    let sun_rot_x = -67.0f32;
-    let sun_rot_y = 22.0f32;
-    //8.0f32;
-    commands.spawn_bundle(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            // Configure the projection to better fit the scene
-            shadow_projection: OrthographicProjection {
-                left: -size * 4.0,
-                right: size * 2.0,
-                bottom: -size * 2.0,
-                top: size * 2.0,
-                near: -size * 2.0,
-                far: size * 1.0,
+    if preferences.dynamic_shadows {
+        //Bevy Sun
+        let size: f32 = 100.0;
+        let sun_rot_x = -67.0f32;
+        let sun_rot_y = 22.0f32;
+        //8.0f32;
+        commands.spawn_bundle(DirectionalLightBundle {
+            directional_light: DirectionalLight {
+                // Configure the projection to better fit the scene
+                shadow_projection: OrthographicProjection {
+                    left: -size * 4.0,
+                    right: size * 2.0,
+                    bottom: -size * 2.0,
+                    top: size * 2.0,
+                    near: -size * 2.0,
+                    far: size * 1.0,
+                    ..Default::default()
+                },
+                illuminance: 100000.0,
+                shadows_enabled: true,
                 ..Default::default()
             },
-            illuminance: 100000.0,
-            shadows_enabled: true,
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 0.0),
+                rotation: Quat::from_euler(
+                    EulerRot::XYZ,
+                    (sun_rot_y).to_radians(),
+                    -(sun_rot_x - 180.0f32).to_radians(),
+                    0.0,
+                ),
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        transform: Transform {
-            translation: Vec3::new(0.0, 0.0, 0.0),
-            rotation: Quat::from_euler(
-                EulerRot::XYZ,
-                (sun_rot_y).to_radians(),
-                -(sun_rot_x - 180.0f32).to_radians(),
-                0.0,
-            ),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
+        });
+    }
 
     //Sky Light for Bevy PBR
     commands.spawn_bundle(PointLightBundle {

@@ -29,13 +29,14 @@ impl Plugin for AssetsPlugin {
             .add_plugin(MaterialPlugin::<CustomMaterial>::default())
             .add_plugin(MaterialPlugin::<EmissiveMaterial>::default())
             .add_plugin(MaterialPlugin::<LightShaftMaterial>::default())
-            .add_state(GameState::Loading);
+            .add_state(GameState::Menu);
     }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub enum GameState {
     Loading,
+    Menu,
     Playing,
 }
 
@@ -50,26 +51,26 @@ pub struct FontAssets {
 #[derive(AssetCollection)]
 pub struct ImageAssets {
     // Shared Textures
-    #[asset(path = "textures/concrete.jpg")]
+    #[asset(key = "concrete")]
     pub concrete: Handle<Image>,
-    #[asset(path = "textures/concrete3.jpg")]
+    #[asset(key = "concrete3")]
     pub concrete3: Handle<Image>,
-    #[asset(path = "textures/detail.jpg")]
+    #[asset(key = "detail")]
     pub detail: Handle<Image>,
-    #[asset(path = "textures/reflection.jpg")]
-    // Level pieces
+    #[asset(key = "reflection")]
     pub reflection: Handle<Image>,
-    #[asset(path = "textures/level1/bake/large_ceiling_supports.jpg")]
+    // Level pieces
+    #[asset(key = "level1_large_ceiling_supports")]
     pub level1_large_ceiling_supports: Handle<Image>,
-    #[asset(path = "textures/level1/bake/pillars.jpg")]
+    #[asset(key = "level1_pillars")]
     pub level1_pillars: Handle<Image>,
-    #[asset(path = "textures/level1/bake/sky_box.jpg")]
+    #[asset(key = "level1_sky_box")]
     pub level1_sky_box: Handle<Image>,
-    #[asset(path = "textures/level1/bake/spheres_base.jpg")]
+    #[asset(key = "level1_spheres_base")]
     pub level1_spheres_base: Handle<Image>,
-    #[asset(path = "textures/level1/bake/spheres.jpg")]
+    #[asset(key = "level1_spheres")]
     pub level1_spheres: Handle<Image>,
-    #[asset(path = "textures/level1/bake/walls.jpg")]
+    #[asset(key = "level1_walls")]
     pub level1_walls: Handle<Image>,
 }
 

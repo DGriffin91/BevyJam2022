@@ -71,6 +71,7 @@ pub struct MaterialProperties {
     pub reflection_mask: MaterialSetProp,
     pub mist: MaterialSetProp,
     pub directional_light_blend: f32,
+    pub flags: u32,
     // pub directional_light_color: Vec3,
 }
 
@@ -136,9 +137,27 @@ pub struct CustomMaterial {
 //     }
 // }
 
+bitflags::bitflags! {
+    #[repr(transparent)]
+    pub struct CustomMaterialFlags: u32 {
+        const SHADOWS                      = (1 << 0);
+        const POTATO                       = (1 << 1);
+        //const METALLIC_ROUGHNESS_TEXTURE = (1 << 2);
+        //const OCCLUSION_TEXTURE          = (1 << 3);
+        //const DOUBLE_SIDED               = (1 << 4);
+        //const UNLIT                      = (1 << 5);
+        //const ALPHA_MODE_OPAQUE          = (1 << 6);
+        //const ALPHA_MODE_MASK            = (1 << 7);
+        //const ALPHA_MODE_BLEND           = (1 << 8);
+        const NONE                         = 0;
+        //const UNINITIALIZED              = 0xFFFF;
+    }
+}
+
 #[derive(Clone)]
 pub struct GpuCustomMaterial {
     _buffer: Buffer,
+    _flags: u32,
     bind_group: BindGroup,
 }
 
@@ -204,6 +223,7 @@ impl RenderAsset for CustomMaterial {
 
         Ok(GpuCustomMaterial {
             _buffer: buffer,
+            _flags: material_properties.flags,
             bind_group,
         })
     }

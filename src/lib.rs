@@ -40,7 +40,7 @@ impl Plugin for GamePlugin {
             .add_plugin(UiPlugin)
             .add_plugin(WorldPlugin)
             // Main systems
-            .add_startup_system(center_mouse_startup);
+            .add_startup_system(mouse_startup);
     }
 }
 
@@ -53,10 +53,8 @@ enum Layer {
     World,
 }
 
-fn center_mouse_startup(mut windows: ResMut<Windows>) {
+fn mouse_startup(mut windows: ResMut<Windows>) {
     let window = windows.get_primary_mut().unwrap();
-    window.set_cursor_position(Vec2::new(window.width() / 4.0, window.height() / 4.0));
-
-    window.set_cursor_lock_mode(true);
-    window.set_cursor_visibility(false);
+    window.set_cursor_lock_mode(false);
+    window.set_cursor_visibility(true);
 }

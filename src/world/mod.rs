@@ -7,7 +7,7 @@ use crate::assets::{
 
 use self::level1::LevelOnePlugin;
 
-mod level1;
+pub mod level1;
 
 pub struct WorldPlugin;
 
