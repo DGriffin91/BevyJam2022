@@ -26,7 +26,7 @@ use crate::{
         custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp},
         GameState, ImageAssets,
     },
-    enemies::Waypoint,
+    enemies::{Waypoint, Waypoints},
     ui::menu::GamePreferences,
     Layer,
 };
@@ -378,10 +378,11 @@ fn spawn_waypoints(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut waypoints: ResMut<Waypoints>,
 ) {
     //--- WAYPOINTS ---
     //--- inside ---
-    let waypoints = [
+    waypoints.inside = vec![
         Vec3::new(-10.0, 36.4119, -210.641),
         Vec3::new(10.0, 36.4119, -210.641),
         Vec3::new(32.0, 36.4119, -211.335),
@@ -426,7 +427,9 @@ fn spawn_waypoints(
         Vec3::new(10.0, 36.4119, -250.39),
         Vec3::new(32.0, 36.4119, -251.084),
         Vec3::new(-32.0, 36.4119, -250.737),
-        //--- outside ---
+    ];
+    //--- outside ---
+    waypoints.outside = vec![
         Vec3::new(-80.0, 36.4119, -130.231),
         Vec3::new(-80.0, 36.4119, -169.869),
         Vec3::new(-80.0, 36.4119, -90.3362),
@@ -441,7 +444,9 @@ fn spawn_waypoints(
         Vec3::new(80.0, 36.4119, 70.5203),
         Vec3::new(-80.0, 36.4119, 70.5203),
         Vec3::new(80.0, 36.4119, -130.231),
-        //--- window ---
+    ];
+    //--- window ---
+    waypoints.window = vec![
         Vec3::new(49.4907, 36.4119, -129.961),
         Vec3::new(49.4907, 36.4119, -170.024),
         Vec3::new(49.4907, 36.4119, -90.012),
@@ -456,15 +461,17 @@ fn spawn_waypoints(
         Vec3::new(-49.4163, 36.4119, 30.0093),
         Vec3::new(-49.4163, 36.4119, -10.0394),
         Vec3::new(-49.4163, 36.4119, 70.0339),
-        //--- out_front ---
-        Vec3::new(-91.3197, 36.4119, -323.804),
-        Vec3::new(74.844, 36.4119, -325.243),
+    ];
+    //--- outfront ---
+    waypoints.outfront = vec![
+        Vec3::new(-42.1961, 36.4119, -321.883),
+        Vec3::new(44.0373, 36.4119, -349.097),
         Vec3::new(-10.0, 36.4119, -272.966),
         Vec3::new(10.0, 36.4119, -272.966),
-        Vec3::new(-43.8642, 36.4119, -305.488),
-        Vec3::new(32.8, 36.4119, -306.094),
-        Vec3::new(125.945, 36.4119, -343.37),
-        Vec3::new(-138.277, 36.4119, -347.11),
+        Vec3::new(-42.6957, 36.4119, -348.525),
+        Vec3::new(44.5535, 36.4119, -321.196),
+        Vec3::new(43.9461, 36.4119, -379.572),
+        Vec3::new(-42.9969, 36.4119, -379.358),
     ];
 
     let mesh = meshes.add(Mesh::from(shape::UVSphere {
@@ -477,7 +484,37 @@ fn spawn_waypoints(
         ..Default::default()
     });
 
-    for pos in waypoints {
+    for pos in waypoints.inside.iter() {
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: mesh.clone(),
+                material: material.clone(),
+                transform: Transform::from_xyz(pos.x, pos.y, pos.z),
+                ..Default::default()
+            })
+            .insert(Waypoint);
+    }
+    for pos in waypoints.outside.iter() {
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: mesh.clone(),
+                material: material.clone(),
+                transform: Transform::from_xyz(pos.x, pos.y, pos.z),
+                ..Default::default()
+            })
+            .insert(Waypoint);
+    }
+    for pos in waypoints.window.iter() {
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: mesh.clone(),
+                material: material.clone(),
+                transform: Transform::from_xyz(pos.x, pos.y, pos.z),
+                ..Default::default()
+            })
+            .insert(Waypoint);
+    }
+    for pos in waypoints.outfront.iter() {
         commands
             .spawn_bundle(PbrBundle {
                 mesh: mesh.clone(),

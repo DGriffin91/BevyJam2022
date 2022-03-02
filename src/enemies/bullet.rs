@@ -23,16 +23,13 @@ pub struct BulletBundle {
 }
 
 impl BulletBundle {
-    pub fn shoot(from: Vec3, direction: Vec3) -> Self {
+    pub fn shoot(from: Vec3, direction: Vec3, dammage: i32) -> Self {
         BulletBundle {
-            bullet: Bullet,
+            bullet: Bullet { dammage },
             transform: Transform::from_translation(from).looking_at(direction, Vec3::Y),
             global_transform: GlobalTransform::default(),
             rigid_body: RigidBody::Dynamic,
-            collision_shape: CollisionShape::Cylinder {
-                half_height: 0.2,
-                radius: 0.2,
-            },
+            collision_shape: CollisionShape::Sphere { radius: 1.0 },
             collision_layers: CollisionLayers::none()
                 .with_group(Layer::Bullet)
                 .with_masks([Layer::World, Layer::Player]),
@@ -46,7 +43,9 @@ impl BulletBundle {
 }
 
 #[derive(Component)]
-pub struct Bullet;
+pub struct Bullet {
+    dammage: i32,
+}
 
 pub fn disable_gravity_for_bullets(
     mut rigid_bodies: ResMut<RigidBodySet>,
@@ -65,6 +64,7 @@ pub fn handle_bullet_collisions(
     mut collision_events: EventReader<CollisionEvent>,
     mut players: Query<(Entity, &mut Player)>,
     mut player_events: EventWriter<PlayerEvent>,
+    mut bullets: Query<&Bullet>,
 ) {
     for collision in collision_events.iter() {
         match collision {
@@ -76,14 +76,15 @@ pub fn handle_bullet_collisions(
                 } else {
                     continue;
                 };
+
                 let (bullet_ent, other_ent) =
                     (bullet.rigid_body_entity(), other.rigid_body_entity());
 
                 if is_player(other) {
-                    for (entity, mut player) in players.iter_mut() {
-                        if entity == other_ent {
+                    if let Ok((_, mut player)) = players.get_mut(other_ent) {
+                        if let Ok(bullet) = bullets.get(bullet_ent) {
                             player_events.send(PlayerEvent::Hit);
-                            player.health -= 30;
+                            player.health -= bullet.dammage;
                         }
                     }
                 }
