@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::assets::{
     custom_material::{CustomMaterial, MaterialProperties},
     light_shaft_material::{LightShaftMaterial, LightShaftProperties},
+    orb_material::{OrbMaterial, OrbProperties},
 };
 
 use self::level1::LevelOnePlugin;
@@ -26,6 +27,10 @@ pub enum LevelAsset {
     LightShaftMaterial {
         properties: LightShaftProperties,
         handle: Handle<LightShaftMaterial>,
+    },
+    OrbMaterial {
+        properties: OrbProperties,
+        handle: Handle<OrbMaterial>,
     },
 }
 

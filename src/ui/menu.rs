@@ -7,7 +7,8 @@ use bevy_egui::{
 
 use crate::{
     assets::{
-        custom_material::CustomMaterial, light_shaft_material::LightShaftMaterial, GameState,
+        custom_material::CustomMaterial, light_shaft_material::LightShaftMaterial,
+        orb_material::OrbMaterial, GameState,
     },
     player::MovementSettings,
     world::{level1, LevelAsset},
@@ -105,6 +106,7 @@ fn menu_ui(
     mut egui_context: ResMut<EguiContext>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
     mut light_shaft_materials: ResMut<Assets<LightShaftMaterial>>,
+    mut orb_materials: ResMut<Assets<OrbMaterial>>,
     mut level_asset_query: Query<&mut LevelAsset>,
     mut movement_settings: ResMut<MovementSettings>,
     keys: Res<Input<KeyCode>>,
@@ -121,8 +123,10 @@ fn menu_ui(
 
         #[cfg(debug_assertions)]
         egui::Window::new("environment materials").show(egui_context.ctx_mut(), |ui| {
+            // TODO Refactor after jam
             let mut mat_props = None;
             let mut shaft_props = None;
+            let mut orb_props = None;
             for mut level_asset in level_asset_query.iter_mut() {
                 match level_asset.as_mut() {
                     LevelAsset::CustomMaterial {
@@ -153,6 +157,20 @@ fn menu_ui(
                             *properties = shaft_props;
                             if let Some(mat) = light_shaft_materials.get_mut(handle.clone()) {
                                 mat.material_properties = shaft_props;
+                            }
+                        }
+                    }
+                    LevelAsset::OrbMaterial { properties, handle } => {
+                        if orb_props.is_none() {
+                            ui.collapsing("orb properties", |ui| {
+                                properties.build_ui(ui);
+                            });
+                            orb_props = Some(*properties);
+                        }
+                        if let Some(orb_props) = orb_props {
+                            *properties = orb_props;
+                            if let Some(mat) = orb_materials.get_mut(handle.clone()) {
+                                mat.material_properties = orb_props;
                             }
                         }
                     }

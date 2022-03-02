@@ -25,7 +25,7 @@ use crate::{
 
 use super::material_util::get_sampler;
 
-#[derive(Debug, Clone, Copy, AsStd140)]
+#[derive(Debug, Clone, Copy, Default, AsStd140)]
 pub struct MaterialSetProp {
     pub scale: f32,
     pub contrast: f32,

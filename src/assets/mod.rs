@@ -5,13 +5,15 @@ use rand::prelude::SliceRandom;
 
 use self::{
     custom_material::CustomMaterial, emissive_material::EmissiveMaterial,
-    light_shaft_material::LightShaftMaterial, splash_screen::SplashScreenPlugin,
+    light_shaft_material::LightShaftMaterial, orb_material::OrbMaterial,
+    splash_screen::SplashScreenPlugin,
 };
 
 pub mod custom_material;
 pub mod emissive_material;
 pub mod light_shaft_material;
 mod material_util;
+pub mod orb_material;
 mod splash_screen;
 
 pub struct AssetsPlugin;
@@ -30,6 +32,7 @@ impl Plugin for AssetsPlugin {
             .add_plugin(MaterialPlugin::<CustomMaterial>::default())
             .add_plugin(MaterialPlugin::<EmissiveMaterial>::default())
             .add_plugin(MaterialPlugin::<LightShaftMaterial>::default())
+            .add_plugin(MaterialPlugin::<OrbMaterial>::default())
             .add_state(GameState::Menu);
     }
 }
@@ -92,6 +95,9 @@ pub struct ModelAssets {
     pub level1_walls: Handle<Mesh>,
     #[asset(path = "models/level1/light_shafts.gltf#Mesh0/Primitive0")]
     pub level1_light_shafts: Handle<Mesh>,
+    // General
+    #[asset(path = "models/standard_plane2.glb#Mesh0/Primitive0")]
+    pub standard_plane: Handle<Mesh>,
     // Units
     #[asset(path = "models/units/unit1.glb#Scene0")]
     pub unit1: Handle<Scene>,

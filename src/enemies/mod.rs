@@ -10,8 +10,12 @@ use rand::{prelude::SliceRandom, Rng};
 use splines::{Interpolation, Spline};
 
 use crate::{
-    assets::{GameState, ModelAssets},
+    assets::{
+        orb_material::{OrbMaterial, OrbProperties},
+        GameState, ImageAssets, ModelAssets,
+    },
     player::Player,
+    world::LevelAsset,
 };
 
 use self::{
@@ -127,6 +131,7 @@ fn update_destinations(
             distances.push((player_transform.translation.distance(*loc), i));
         }
         distances.sort_by(|a, b| (a.0).partial_cmp(&b.0).unwrap());
+        //TODO: do pick the closest one if we haven't hit the player in a while
         enemies_state.destinations[0] = distances[5].1; //Don't pick the closest one
         enemies_state.destinations[1] = distances[6].1;
         enemies_state.destinations[2] = distances[7].1;
@@ -452,9 +457,10 @@ fn enemies_fire_at_player(
     mut commands: Commands,
     time: Res<Time>,
     mut enemies: Query<(&Transform, &mut EnemyLastFired, &mut Enemy), With<Alive>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut orb_materials: ResMut<Assets<OrbMaterial>>,
     enemies_state: Res<EnemiesState>,
+    image_assets: Res<ImageAssets>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     for (transform, mut enemy_last_fired, enemy) in enemies.iter_mut() {
         enemy_last_fired.0.tick(time.delta());
@@ -471,20 +477,32 @@ fn enemies_fire_at_player(
                 ))
                 .with_children(|parent| {
                     // // Debug hit box
+                    let orb_material_props = OrbProperties {
+                        color_tint: Vec3::new(0.5, 0.5, 1.0),
+                        radius: 0.0,
+                        inner_radius: 0.28,
+                        ..Default::default()
+                    };
+                    let orb_material = orb_materials.add(OrbMaterial {
+                        material_properties: orb_material_props,
+                        noise_texture: Some(image_assets.detail.clone()),
+                    });
                     let mesh = meshes.add(Mesh::from(shape::Icosphere {
-                        radius: 1.0,
+                        radius: 2.0,
                         subdivisions: 1,
-                    }));
-                    let material = materials.add(StandardMaterial {
-                        base_color: Color::WHITE,
-                        ..Default::default()
-                    });
-
-                    parent.spawn_bundle(PbrBundle {
-                        mesh,
-                        material,
-                        ..Default::default()
-                    });
+                    })); //TODO use billboard
+                    parent
+                        .spawn()
+                        .insert_bundle(MaterialMeshBundle {
+                            mesh,
+                            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                            material: orb_material.clone(),
+                            ..Default::default()
+                        })
+                        .insert(LevelAsset::OrbMaterial {
+                            properties: orb_material_props,
+                            handle: orb_material,
+                        });
                 });
         }
     }

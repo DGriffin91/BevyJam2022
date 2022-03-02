@@ -24,6 +24,7 @@ use crate::{
     },
     assets::{
         custom_material::{CustomMaterial, MaterialProperties, MaterialSetProp},
+        orb_material::update_orb_material_time,
         GameState, ImageAssets,
     },
     enemies::{Waypoint, Waypoints},
@@ -43,7 +44,8 @@ impl Plugin for LevelOnePlugin {
                 .with_system(spawn_demo_cubes)
                 .with_system(spawn_waypoints),
         )
-        .add_system(update_light_shaft_material_time);
+        .add_system(update_light_shaft_material_time)
+        .add_system(update_orb_material_time);
     }
 }
 
