@@ -9,7 +9,7 @@ use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial};
 use heron::rapier_plugin::convert::IntoRapier;
 use heron::rapier_plugin::rapier3d::prelude::RigidBodySet;
 use heron::rapier_plugin::{PhysicsWorld, RigidBodyHandle};
-use heron::{CollisionLayers, CollisionShape, RigidBody, RotationConstraints};
+use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, RotationConstraints};
 
 use crate::assets::custom_material::slider;
 use crate::assets::{AudioAssets, GameState, ModelAssets};
@@ -74,7 +74,7 @@ impl Default for MovementSettings {
     fn default() -> Self {
         Self {
             sensitivity: 3.0,
-            speed: 12.0,
+            speed: 14.0,
             lock_y: true,
             run_multiplier: 1.6,
             forward_key: KeyCode::W,
@@ -156,6 +156,7 @@ struct PlayerBundle {
     collision_layers: CollisionLayers,
     collision_shape: CollisionShape,
     rotation_constraints: RotationConstraints,
+    physic_material: PhysicMaterial,
 }
 
 impl Default for PlayerBundle {
@@ -173,7 +174,12 @@ impl Default for PlayerBundle {
                 half_segment: 1.0,
                 radius: 0.5,
             },
-            rotation_constraints: RotationConstraints::restrict_to_y_only(),
+            rotation_constraints: RotationConstraints::lock(),
+            physic_material: PhysicMaterial {
+                restitution: 0.1,
+                density: 10.0,
+                friction: 0.0,
+            },
         }
     }
 }
@@ -293,7 +299,7 @@ fn player_move(
 ) {
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
-        for (entity, mut transform, _rb) in query.iter_mut() {
+        for (entity, mut transform, rb) in query.iter_mut() {
             //if let Some(body) = rigid_bodies.get_mut(rb.into_rapier()) {
             let mut velocity = Vec3::ZERO;
             let local_z = transform.local_z();
@@ -314,6 +320,12 @@ fn player_move(
                 } else if &settings.right_key == key {
                     velocity += right
                 }
+                //Jump? Too floaty
+                //if &KeyCode::Space == key {
+                //    body.apply_impulse([0.0, 100.0, 0.0].into(), false);
+                //    let a = body.angvel()[1];
+                //    dbg!(a);
+                //}
             }
             for key in keys.get_pressed() {
                 if &settings.sprint_key == key && moving_forward {
@@ -326,14 +338,18 @@ fn player_move(
 
             //move_delta = Vec3::new(body.linvel().x, 0.0, body.linvel().z).lerp(move_delta, 0.2);
 
-            //body.set_linvel([move_delta.x, body.linvel().y, move_delta.z].into(), false);
+            //let lin_vel_move_delta = move_delta * 100.0;
+            //body.set_linvel(
+            //    [lin_vel_move_delta.x, body.linvel().y, lin_vel_move_delta.z].into(),
+            //    false,
+            //);
             transform.translation += move_delta;
 
             if let Ok(mut footsteps) = footsteps.get_component_mut::<Footsteps>(entity) {
                 let abs_move_delta = move_delta.abs();
                 footsteps.move_distance += abs_move_delta.x.max(abs_move_delta.z);
             }
-            //}body
+            //}
         }
     }
 }

@@ -421,7 +421,7 @@ fn enemies_look_at_player(
                 enemy.within_range_of_player = true;
                 let target = enemy_transform
                     .looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
-                enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.25);
+                enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.4);
             } else {
                 enemy.within_range_of_player = false;
             }
