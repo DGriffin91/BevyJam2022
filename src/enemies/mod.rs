@@ -136,11 +136,17 @@ impl Hash for WaypointForPathfinding {
 #[derive(Component)]
 pub struct Enemy {
     _health: f32,
+    within_range_of_player: bool,
+    range: f32,
 }
 
 impl Default for Enemy {
     fn default() -> Self {
-        Enemy { _health: 1000.0 }
+        Enemy {
+            _health: 1000.0,
+            within_range_of_player: false,
+            range: 50.0,
+        }
     }
 }
 
@@ -161,13 +167,22 @@ fn spawn_enemies(mut commands: Commands, model_assets: Res<ModelAssets>) {
 
 fn enemies_look_at_player(
     players: Query<&Transform, With<Player>>,
-    mut enemies: Query<&mut Transform, (With<Enemy>, Without<Player>)>,
+    mut enemies: Query<(&mut Transform, &mut Enemy), Without<Player>>,
 ) {
     if let Some(player_transform) = players.iter().next() {
-        for mut enemy_transform in enemies.iter_mut() {
-            let target =
-                enemy_transform.looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
-            enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.04);
+        for (mut enemy_transform, mut enemy) in enemies.iter_mut() {
+            if enemy_transform
+                .translation
+                .distance(player_transform.translation)
+                <= enemy.range
+            {
+                enemy.within_range_of_player = true;
+                let target = enemy_transform
+                    .looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
+                enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.04);
+            } else {
+                enemy.within_range_of_player = false;
+            }
         }
     }
 }
@@ -175,13 +190,13 @@ fn enemies_look_at_player(
 fn enemies_fire_at_player(
     mut commands: Commands,
     time: Res<Time>,
-    mut enemies: Query<(&Transform, &mut EnemyLastFired)>,
+    mut enemies: Query<(&Transform, &mut EnemyLastFired, &mut Enemy)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    for (transform, mut enemy_last_fired) in enemies.iter_mut() {
+    for (transform, mut enemy_last_fired, enemy) in enemies.iter_mut() {
         enemy_last_fired.0.tick(time.delta());
-        if enemy_last_fired.0.just_finished() {
+        if enemy_last_fired.0.just_finished() && enemy.within_range_of_player {
             // Shoot at player
             commands
                 .spawn_bundle(BulletBundle::shoot(
