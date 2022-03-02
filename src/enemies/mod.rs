@@ -66,15 +66,15 @@ struct EnemiesState {
 struct LevelParams {
     kills_to_level_up: usize,
     max_enemies: usize,
-    dammage_multiplier: f32,
+    damage_multiplier: f32,
 }
 
 impl LevelParams {
-    fn new(kills_to_level_up: usize, max_enemies: usize, dammage_multiplier: f32) -> Self {
+    fn new(kills_to_level_up: usize, max_enemies: usize, damage_multiplier: f32) -> Self {
         LevelParams {
             kills_to_level_up,
             max_enemies,
-            dammage_multiplier,
+            damage_multiplier,
         }
     }
 }
@@ -290,7 +290,8 @@ pub struct Enemy {
     current_random_offset: Vec3,
     update_destination_timer: Timer,
     move_speed: f32,
-    weapon_dammage: f32,
+    weapon_damage: f32,
+    weapon_splash_radius: f32,
 }
 
 impl Default for Enemy {
@@ -303,7 +304,8 @@ impl Default for Enemy {
             update_destination_timer: Timer::from_seconds(2.0, true),
             move_speed: 30.0,
             current_random_offset: Vec3::new(0.0, 0.0, 0.0),
-            weapon_dammage: 30.0,
+            weapon_damage: 50.0,
+            weapon_splash_radius: 8.0,
         }
     }
 }
@@ -438,7 +440,7 @@ fn enemies_look_at_player(
                 enemy.within_range_of_player = true;
                 let target = enemy_transform
                     .looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
-                enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.4);
+                enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.9);
             } else {
                 enemy.within_range_of_player = false;
             }
@@ -462,9 +464,10 @@ fn enemies_fire_at_player(
                 .spawn_bundle(BulletBundle::shoot(
                     transform.translation,
                     transform.forward(),
-                    (enemy.weapon_dammage as f32
-                        * enemies_state.get_level_params().dammage_multiplier)
+                    (enemy.weapon_damage as f32
+                        * enemies_state.get_level_params().damage_multiplier)
                         as i32,
+                    enemy.weapon_splash_radius,
                 ))
                 .with_children(|parent| {
                     // // Debug hit box

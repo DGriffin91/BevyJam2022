@@ -23,17 +23,20 @@ pub struct BulletBundle {
 }
 
 impl BulletBundle {
-    pub fn shoot(from: Vec3, direction: Vec3, dammage: i32) -> Self {
+    pub fn shoot(from: Vec3, direction: Vec3, damage: i32, splash_radius: f32) -> Self {
         BulletBundle {
-            bullet: Bullet { dammage },
+            bullet: Bullet {
+                damage,
+                splash_radius,
+            },
             transform: Transform::from_translation(from).looking_at(direction, Vec3::Y),
             global_transform: GlobalTransform::default(),
             rigid_body: RigidBody::Dynamic,
-            collision_shape: CollisionShape::Sphere { radius: 3.0 }, //purposely oversized
+            collision_shape: CollisionShape::Sphere { radius: 2.0 }, //purposely oversized
             collision_layers: CollisionLayers::none()
                 .with_group(Layer::Bullet)
                 .with_masks([Layer::World, Layer::Player]),
-            velocity: Velocity::from_linear(direction * 50.0),
+            velocity: Velocity::from_linear(direction * 80.0),
             physic_material: PhysicMaterial {
                 // density: 0.001,
                 ..Default::default()
@@ -44,7 +47,8 @@ impl BulletBundle {
 
 #[derive(Component)]
 pub struct Bullet {
-    dammage: i32,
+    damage: i32,
+    splash_radius: f32,
 }
 
 pub fn disable_gravity_for_bullets(
@@ -62,9 +66,9 @@ pub fn disable_gravity_for_bullets(
 pub fn handle_bullet_collisions(
     mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
-    mut players: Query<(Entity, &mut Player)>,
+    mut players: Query<(Entity, &Transform, &mut Player)>,
     mut player_events: EventWriter<PlayerEvent>,
-    bullets: Query<&Bullet>,
+    bullets: Query<(&Transform, &Bullet)>,
 ) {
     for collision in collision_events.iter() {
         match collision {
@@ -80,11 +84,23 @@ pub fn handle_bullet_collisions(
                 let (bullet_ent, other_ent) =
                     (bullet.rigid_body_entity(), other.rigid_body_entity());
 
-                if is_player(other) {
-                    if let Ok((_, mut player)) = players.get_mut(other_ent) {
-                        if let Ok(bullet) = bullets.get(bullet_ent) {
+                if let Ok((bullet_transform, bullet)) = bullets.get(bullet_ent) {
+                    if is_player(other) {
+                        if let Ok((_, _, mut player)) = players.get_mut(other_ent) {
                             player_events.send(PlayerEvent::Hit);
-                            player.health -= bullet.dammage;
+                            player.health -= bullet.damage;
+                        }
+                    } else if let Some((_entity, player_transform, mut player)) =
+                        players.iter_mut().next()
+                    {
+                        if bullet_transform
+                            .translation
+                            .distance(player_transform.translation)
+                            < bullet.splash_radius
+                        //Splash Damage
+                        {
+                            player_events.send(PlayerEvent::Hit);
+                            player.health -= (bullet.damage as f32 * 0.5) as i32;
                         }
                     }
                 }

@@ -211,7 +211,10 @@ pub struct PlayerCam;
 struct PlayerPolyline;
 
 #[derive(Component)]
-struct PlayerWeapon;
+struct PlayerWeapon {
+    fire_rate: f32,
+    last_shot: f32,
+}
 
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(
@@ -244,7 +247,10 @@ fn setup_player(
                         .with_children(|parent| {
                             parent.spawn_scene(lasergun.clone());
                         })
-                        .insert(PlayerWeapon);
+                        .insert(PlayerWeapon {
+                            fire_rate: 0.434,
+                            last_shot: 0.0,
+                        }); //140RPM
                 })
                 .insert(PlayerCam);
         });
@@ -299,7 +305,7 @@ fn player_move(
 ) {
     let window = windows.get_primary().unwrap();
     if window.is_focused() && window.cursor_locked() {
-        for (entity, mut transform, rb) in query.iter_mut() {
+        for (entity, mut transform, _rb) in query.iter_mut() {
             //if let Some(body) = rigid_bodies.get_mut(rb.into_rapier()) {
             let mut velocity = Vec3::ZERO;
             let local_z = transform.local_z();
@@ -394,6 +400,7 @@ fn player_look(
 }
 
 fn player_fire(
+    time: Res<Time>,
     //mut commands: Commands,
     windows: Res<Windows>,
     mouse_button_input: Res<Input<MouseButton>>,
@@ -402,7 +409,7 @@ fn player_fire(
     //mut meshes: ResMut<Assets<Mesh>>,
     //mut materials: ResMut<Assets<StandardMaterial>>,
     player_cams: Query<&GlobalTransform, With<PlayerCam>>,
-    player_weapon: Query<&GlobalTransform, With<PlayerWeapon>>,
+    mut player_weapon: Query<(&GlobalTransform, &mut PlayerWeapon)>,
     mut polylines: ResMut<Assets<Polyline>>,
     mut polylines_query: Query<
         (
@@ -423,7 +430,15 @@ fn player_fire(
     }
 
     if mouse_button_input.just_pressed(MouseButton::Left) {
-        for (cam_transform, weapon_transform) in player_cams.iter().zip(player_weapon.iter()) {
+        for (cam_transform, (weapon_transform, mut weapon)) in
+            player_cams.iter().zip(player_weapon.iter_mut())
+        {
+            if time.time_since_startup().as_secs_f32() - weapon.last_shot < weapon.fire_rate {
+                return;
+            } else {
+                weapon.last_shot = time.time_since_startup().as_secs_f32();
+            };
+
             let pitch = state.pitch;
             let yaw = -state.yaw;
             let xz = f32::cos(pitch);
