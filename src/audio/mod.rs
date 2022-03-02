@@ -1,6 +1,5 @@
 use bevy::{prelude::*, utils::HashMap};
-use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin, AudioSource};
-use rand::prelude::SliceRandom;
+use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin};
 
 use crate::{
     assets::{AudioAssets, GameState},
@@ -79,22 +78,10 @@ fn player_audio_events(
     for player_event in player_events.iter() {
         match player_event {
             PlayerEvent::Hit => {
-                let hurt_audio = audio_assets
-                    .hurt
-                    .choose(&mut rand::thread_rng())
-                    .unwrap()
-                    .clone()
-                    .typed::<AudioSource>();
-                audio.play(hurt_audio);
+                audio.play(audio_assets.get_hurt().clone());
             }
             PlayerEvent::Fire => {
-                let fire_audio = audio_assets
-                    .lasergun
-                    .choose(&mut rand::thread_rng())
-                    .unwrap()
-                    .clone()
-                    .typed::<AudioSource>();
-                audio.play(fire_audio);
+                audio.play(audio_assets.get_lasergun().clone());
             }
         }
     }

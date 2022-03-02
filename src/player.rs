@@ -4,13 +4,12 @@ use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
 use bevy_egui::egui::Ui;
-use bevy_kira_audio::{Audio, AudioSource};
+use bevy_kira_audio::Audio;
 use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial};
 use heron::rapier_plugin::convert::IntoRapier;
 use heron::rapier_plugin::rapier3d::prelude::RigidBodySet;
 use heron::rapier_plugin::{PhysicsWorld, RigidBodyHandle};
 use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, RotationConstraints};
-use rand::prelude::SliceRandom;
 
 use crate::assets::custom_material::slider;
 use crate::assets::{AudioAssets, GameState, ModelAssets};
@@ -522,7 +521,7 @@ fn player_change_speed(
 }
 
 fn cursor_grab(keys: Res<Input<KeyCode>>, mut windows: ResMut<Windows>) {
-    if keys.just_pressed(KeyCode::Escape) {
+    if keys.just_pressed(KeyCode::Escape) || keys.just_pressed(KeyCode::Tab) {
         let window = windows.get_primary_mut().unwrap();
         toggle_grab_cursor(window);
     }
@@ -546,13 +545,7 @@ fn footsteps(
     for mut footsteps in footsteps.iter_mut() {
         if footsteps.move_distance > 4.0 {
             footsteps.move_distance = 0.0;
-            let footstep_audio = audio_assets
-                .footsteps
-                .choose(&mut rand::thread_rng())
-                .unwrap()
-                .clone()
-                .typed::<AudioSource>();
-            audio.play(footstep_audio);
+            audio.play(audio_assets.get_step().clone());
         }
     }
 }

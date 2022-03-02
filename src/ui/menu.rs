@@ -112,6 +112,10 @@ fn menu_ui(
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
         egui::Window::new("Preferences").show(egui_context.ctx_mut(), |ui| {
+            if ui.button("Continue").clicked() {
+                window.set_cursor_lock_mode(true);
+                window.set_cursor_visibility(false);
+            }
             movement_settings.build_ui(ui, keys);
         });
 

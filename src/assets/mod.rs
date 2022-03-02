@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 use bevy_kira_audio::AudioSource;
+use rand::prelude::SliceRandom;
 
 use self::{
     custom_material::CustomMaterial, emissive_material::EmissiveMaterial,
@@ -105,10 +106,112 @@ pub struct ModelAssets {
 pub struct AudioAssets {
     #[asset(path = "audio/atmosphere.ogg")]
     pub atmosphere: Handle<AudioSource>,
-    #[asset(path = "audio/footsteps", folder)]
-    pub footsteps: Vec<HandleUntyped>,
-    #[asset(path = "audio/hurt", folder)]
-    pub hurt: Vec<HandleUntyped>,
-    #[asset(path = "audio/weapons/lasergun", folder)]
-    pub lasergun: Vec<HandleUntyped>,
+
+    // Folder import not working in wasm:
+    // #[asset(path = "audio/footsteps", folder)]
+    // pub footsteps: Vec<HandleUntyped>,
+    // panicked at 'called `Result::unwrap()` on an `Err` value:
+    // AssetFolderNotADirectory("audio/footsteps")', src\assets\mod.rs:104:10
+
+    // Steps
+    #[asset(path = "audio/footsteps/step01.ogg")]
+    pub step01: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step02.ogg")]
+    pub step02: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step03.ogg")]
+    pub step03: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step04.ogg")]
+    pub step04: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step05.ogg")]
+    pub step05: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step06.ogg")]
+    pub step06: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step07.ogg")]
+    pub step07: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step08.ogg")]
+    pub step08: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step09.ogg")]
+    pub step09: Handle<AudioSource>,
+    #[asset(path = "audio/footsteps/step10.ogg")]
+    pub step10: Handle<AudioSource>,
+
+    // Hurt
+    #[asset(path = "audio/hurt/hurt-001.ogg")]
+    pub hurt01: Handle<AudioSource>,
+    #[asset(path = "audio/hurt/hurt-002.ogg")]
+    pub hurt02: Handle<AudioSource>,
+    #[asset(path = "audio/hurt/hurt-003.ogg")]
+    pub hurt03: Handle<AudioSource>,
+    #[asset(path = "audio/hurt/hurt-004.ogg")]
+    pub hurt04: Handle<AudioSource>,
+    #[asset(path = "audio/hurt/hurt-005.ogg")]
+    pub hurt05: Handle<AudioSource>,
+    #[asset(path = "audio/hurt/hurt-006.ogg")]
+    pub hurt06: Handle<AudioSource>,
+    #[asset(path = "audio/hurt/hurt-007.ogg")]
+    pub hurt07: Handle<AudioSource>,
+    #[asset(path = "audio/hurt/hurt-008.ogg")]
+    pub hurt08: Handle<AudioSource>,
+
+    // Lasergun
+    #[asset(path = "audio/weapons/lasergun/lasergun01.ogg")]
+    pub lasergun01: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun/lasergun02.ogg")]
+    pub lasergun02: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun/lasergun03.ogg")]
+    pub lasergun03: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun/lasergun04.ogg")]
+    pub lasergun04: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun/lasergun05.ogg")]
+    pub lasergun05: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun/lasergun06.ogg")]
+    pub lasergun06: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun/lasergun07.ogg")]
+    pub lasergun07: Handle<AudioSource>,
+}
+
+impl AudioAssets {
+    pub fn get_hurt(&self) -> &Handle<AudioSource> {
+        [
+            &self.hurt01,
+            &self.hurt02,
+            &self.hurt03,
+            &self.hurt04,
+            &self.hurt05,
+            &self.hurt06,
+            &self.hurt07,
+            &self.hurt08,
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap()
+    }
+    pub fn get_step(&self) -> &Handle<AudioSource> {
+        [
+            &self.step01,
+            &self.step02,
+            &self.step03,
+            &self.step04,
+            &self.step05,
+            &self.step06,
+            &self.step07,
+            &self.step08,
+            &self.step09,
+            &self.step10,
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap()
+    }
+    pub fn get_lasergun(&self) -> &Handle<AudioSource> {
+        [
+            &self.lasergun01,
+            &self.lasergun02,
+            &self.lasergun03,
+            &self.lasergun04,
+            &self.lasergun05,
+            &self.lasergun06,
+            &self.lasergun07,
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap()
+    }
 }

@@ -54,7 +54,7 @@ fn waypoint_debug(
     }
 
     let mut original_waypoints: Vec<_> = waypoints.iter_mut().collect();
-    let mut waypoints: Vec<_> = original_waypoints
+    let waypoints: Vec<_> = original_waypoints
         .iter()
         .map(|(ent, transform, _)| WaypointForPathfinding {
             entity: *ent,

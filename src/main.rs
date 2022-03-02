@@ -16,12 +16,12 @@ fn main() {
                 min_height: 256.0,
                 ..Default::default()
             },
-            scale_factor_override: Some(1.0),
+            scale_factor_override: None, //Some(1.0), //Needed for some mobile devices, but disables scaling
             vsync: false,
             resizable: true,
             decorations: true,
-            cursor_locked: true,
-            cursor_visible: false,
+            cursor_locked: false,
+            cursor_visible: true,
             mode: WindowMode::Windowed,
             transparent: false,
             #[cfg(target_arch = "wasm32")]
