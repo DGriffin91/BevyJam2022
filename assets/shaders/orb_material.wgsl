@@ -14,6 +14,7 @@ struct MaterialProperties {
     color_tint: vec3<f32>;
     radius: f32;
     inner_radius: f32;
+    alpha: f32;
     time: f32;
 };
 
@@ -44,7 +45,7 @@ fn fragment(in: FragmentInput) -> [[location(0)]] vec4<f32> {
     //let dist = distance(V.xy, vec2<f32>(0.5));
     //let fade = 1.0 - smoothStep(0.0, ma.inner_radius, abs(ma.radius-dist));
 
-    let fade = clamp(pow(NdotV, 7.0) * 1.0, 0.0, 1.0);
+    let fade = clamp(pow(NdotV, 7.0) * 1.0 * ma.alpha, 0.0, 1.0);
 
     return vec4<f32>(ma.color_tint, fade);
 }

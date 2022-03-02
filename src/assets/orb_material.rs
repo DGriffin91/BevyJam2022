@@ -29,6 +29,7 @@ pub struct OrbProperties {
     pub color_tint: Vec3,
     pub radius: f32,
     pub inner_radius: f32,
+    pub alpha: f32,
     pub time: f32,
 }
 
@@ -46,6 +47,7 @@ impl OrbProperties {
         slider(ui, &mut self.speed.z, -10.0..=10.0, "speed z");
         slider(ui, &mut self.radius, -2.0..=2.0, "radius");
         slider(ui, &mut self.inner_radius, -2.0..=2.0, "inner_radius");
+        slider(ui, &mut self.alpha, -2.0..=2.0, "alpha");
         self.orb.build_ui(ui, "orb");
         ui.label("-------------");
     }

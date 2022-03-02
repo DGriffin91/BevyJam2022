@@ -12,7 +12,7 @@ use splines::{Interpolation, Spline};
 use crate::{
     assets::{
         orb_material::{OrbMaterial, OrbProperties},
-        GameState, ImageAssets, ModelAssets,
+        GameState, ModelAssets,
     },
     player::Player,
     world::LevelAsset,
@@ -55,7 +55,9 @@ impl Plugin for EnemiesPlugin {
                     .with_system(update_destinations)
                     .with_system(enemies_update_current_destination)
                     .with_system(enemies_move_to_destination)
-                    .with_system(kill_enemy),
+                    .with_system(kill_enemy)
+                    .with_system(progress_explosions)
+                    .with_system(clean_up_dead),
             );
     }
 }
@@ -321,6 +323,11 @@ pub struct EnemyLastFired(Timer);
 #[derive(Component)]
 pub struct Alive;
 
+#[derive(Component)]
+pub struct Dead {
+    time_to_despawn: f32,
+}
+
 trait EnemyBehaviour {
     fn spawn(commands: &mut Commands, transform: Transform, model_assets: &ModelAssets) -> Entity;
 }
@@ -350,7 +357,7 @@ fn enemies_update_current_destination(
 
         let mut rng = rand::thread_rng();
         enemy.current_random_offset.x = rng.gen_range(-5.0f32..=5.0f32);
-        enemy.current_random_offset.y = rng.gen_range(-15.0f32..=0.0f32);
+        enemy.current_random_offset.y = rng.gen_range(-20.0f32..=0.0f32);
         enemy.current_random_offset.z = rng.gen_range(-5.0f32..=5.0f32);
     }
 }
@@ -393,6 +400,7 @@ fn enemies_move_to_destination(
 }
 
 fn kill_enemy(
+    time: Res<Time>,
     mut commands: Commands,
     mut rigid_bodies: ResMut<RigidBodySet>,
     mut enemies: Query<
@@ -400,8 +408,10 @@ fn kill_enemy(
         (Without<Player>, With<Alive>),
     >,
     mut enemies_state: ResMut<EnemiesState>,
+    mut orb_materials: ResMut<Assets<OrbMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    for (entity, _enemy_transform, enemy, rb) in enemies.iter_mut() {
+    for (entity, enemy_transform, enemy, rb) in enemies.iter_mut() {
         if enemy.health > 0 {
             continue;
         }
@@ -418,7 +428,39 @@ fn kill_enemy(
             );
             body.apply_impulse([0.0, -1500.0, 0.0].into(), false);
         }
+
+        let orb_material_props = OrbProperties {
+            color_tint: Vec3::new(1.0, 0.9, 0.5),
+            alpha: 1.0,
+            ..Default::default()
+        };
+        let orb_material = orb_materials.add(OrbMaterial {
+            material_properties: orb_material_props,
+            noise_texture: None,
+        });
+        let mesh = meshes.add(Mesh::from(shape::Icosphere {
+            radius: 2.5,
+            subdivisions: 1,
+        })); //TODO use billboard
+        commands
+            .spawn()
+            .insert_bundle(MaterialMeshBundle {
+                mesh,
+                transform: *enemy_transform,
+                material: orb_material.clone(),
+                ..Default::default()
+            })
+            .insert(Explosion {
+                progress: 0.0,
+                speed: 3.0,
+                scale: 0.032,
+                handle: orb_material,
+            });
+
         commands.entity(entity).remove::<Alive>();
+        commands.entity(entity).insert(Dead {
+            time_to_despawn: time.seconds_since_startup() as f32 + 10.0,
+        });
         // ENEMY KILLED - TODO show kills on screen
         enemies_state.enemies_killed += 1;
         // LEVEL UP - TODO show level on screen
@@ -459,7 +501,6 @@ fn enemies_fire_at_player(
     mut enemies: Query<(&Transform, &mut EnemyLastFired, &mut Enemy), With<Alive>>,
     mut orb_materials: ResMut<Assets<OrbMaterial>>,
     enemies_state: Res<EnemiesState>,
-    image_assets: Res<ImageAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     for (transform, mut enemy_last_fired, enemy) in enemies.iter_mut() {
@@ -481,11 +522,12 @@ fn enemies_fire_at_player(
                         color_tint: Vec3::new(0.5, 0.5, 1.0),
                         radius: 0.0,
                         inner_radius: 0.28,
+                        alpha: 1.0,
                         ..Default::default()
                     };
                     let orb_material = orb_materials.add(OrbMaterial {
                         material_properties: orb_material_props,
-                        noise_texture: Some(image_assets.detail.clone()),
+                        noise_texture: None,
                     });
                     let mesh = meshes.add(Mesh::from(shape::Icosphere {
                         radius: 2.0,
@@ -504,6 +546,42 @@ fn enemies_fire_at_player(
                             handle: orb_material,
                         });
                 });
+        }
+    }
+}
+
+fn clean_up_dead(mut commands: Commands, time: Res<Time>, deads: Query<(Entity, &Dead)>) {
+    for (entity, dead) in deads.iter() {
+        if time.seconds_since_startup() as f32 >= dead.time_to_despawn {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
+// TODO move elsewhere
+#[derive(Component)]
+pub struct Explosion {
+    pub progress: f32,
+    pub speed: f32,
+    pub scale: f32,
+    pub handle: Handle<OrbMaterial>,
+}
+
+fn progress_explosions(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut explosions: Query<(Entity, &mut Transform, &mut Explosion)>,
+    mut orb_materials: ResMut<Assets<OrbMaterial>>,
+) {
+    for (entity, mut trans, mut explosion) in explosions.iter_mut() {
+        explosion.progress += time.delta_seconds() * explosion.speed;
+        if explosion.progress >= 1.0 {
+            commands.entity(entity).despawn();
+        } else {
+            trans.scale *= 1.0 + explosion.progress * explosion.scale;
+            if let Some(mat) = orb_materials.get_mut(explosion.handle.clone()) {
+                mat.material_properties.alpha = 1.0 - explosion.progress;
+            }
         }
     }
 }

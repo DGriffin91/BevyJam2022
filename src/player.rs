@@ -401,7 +401,6 @@ fn player_look(
 
 fn player_fire(
     time: Res<Time>,
-    //mut commands: Commands,
     windows: Res<Windows>,
     mouse_button_input: Res<Input<MouseButton>>,
     physics_world: PhysicsWorld,
@@ -468,6 +467,7 @@ fn player_fire(
                     .with_masks([Layer::World, Layer::Enemy]),
                 |_| true,
             ) {
+                // TODO move to be triggered by event
                 if let Ok(mut enemy) = enemies.get_mut(collision.entity) {
                     enemy.health -= 1001;
                 }
