@@ -32,7 +32,7 @@ impl BulletBundle {
             transform: Transform::from_translation(from).looking_at(direction, Vec3::Y),
             global_transform: GlobalTransform::default(),
             rigid_body: RigidBody::Dynamic,
-            collision_shape: CollisionShape::Sphere { radius: 2.0 }, //purposely oversized
+            collision_shape: CollisionShape::Sphere { radius: 1.0 },
             collision_layers: CollisionLayers::none()
                 .with_group(Layer::Bullet)
                 .with_masks([Layer::World, Layer::Player]),

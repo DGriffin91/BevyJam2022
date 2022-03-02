@@ -402,16 +402,16 @@ fn kill_enemy(
         }
         if let Some(body) = rigid_bodies.get_mut(rb.into_rapier()) {
             let mut rng = rand::thread_rng();
-            body.apply_torque(
+            body.apply_torque_impulse(
                 [
-                    rng.gen_range(-5.0f32..=5.0f32),
-                    rng.gen_range(-5.0f32..=5.0f32),
-                    rng.gen_range(-5.0f32..=5.0f32),
+                    rng.gen_range(-2000.0f32..=2000.0f32),
+                    rng.gen_range(-2000.0f32..=2000.0f32),
+                    rng.gen_range(-2000.0f32..=2000.0f32),
                 ]
                 .into(),
                 false,
             );
-            body.apply_impulse([0.0, -500.0, 0.0].into(), false);
+            body.apply_impulse([0.0, -1500.0, 0.0].into(), false);
         }
         commands.entity(entity).remove::<Alive>();
         // ENEMY KILLED - TODO show kills on screen
