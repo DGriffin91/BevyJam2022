@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::app::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
+use bevy_egui::egui::Ui;
 use bevy_kira_audio::{Audio, AudioSource};
 use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial};
 use heron::rapier_plugin::convert::IntoRapier;
@@ -11,6 +12,7 @@ use heron::rapier_plugin::{PhysicsWorld, RigidBodyHandle};
 use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, RotationConstraints};
 use rand::prelude::SliceRandom;
 
+use crate::assets::custom_material::slider;
 use crate::assets::{AudioAssets, GameState, ModelAssets};
 use crate::Layer;
 
@@ -56,6 +58,16 @@ pub struct MovementSettings {
     pub speed: f32,
     pub run_multiplier: f32,
     pub lock_y: bool,
+    pub forward_key: KeyCode,
+    pub back_key: KeyCode,
+    pub left_key: KeyCode,
+    pub right_key: KeyCode,
+    pub sprint_key: KeyCode,
+    modify_forward: bool,
+    modify_back: bool,
+    modify_left: bool,
+    modify_right: bool,
+    modify_sprint: bool,
 }
 
 impl Default for MovementSettings {
@@ -65,6 +77,71 @@ impl Default for MovementSettings {
             speed: 12.0,
             lock_y: true,
             run_multiplier: 1.6,
+            forward_key: KeyCode::W,
+            back_key: KeyCode::S,
+            left_key: KeyCode::A,
+            right_key: KeyCode::D,
+            sprint_key: KeyCode::LShift,
+            modify_forward: false,
+            modify_back: false,
+            modify_left: false,
+            modify_right: false,
+            modify_sprint: false,
+        }
+    }
+}
+
+impl MovementSettings {
+    pub fn build_ui(&mut self, ui: &mut Ui, keys: Res<Input<KeyCode>>) {
+        // TODO refactor after jam
+        slider(ui, &mut self.sensitivity, 0.1..=10.0, "Mouse Sensitivity");
+        ui.horizontal(|ui| {
+            if ui.button("modify").clicked() {
+                self.modify_forward = true;
+            }
+            ui.label(&format!("{:?}: Forward", self.forward_key));
+        });
+        ui.horizontal(|ui| {
+            if ui.button("modify").clicked() {
+                self.modify_back = true;
+            }
+            ui.label(&format!("{:?}: Back", self.back_key));
+        });
+        ui.horizontal(|ui| {
+            if ui.button("modify").clicked() {
+                self.modify_left = true;
+            }
+            ui.label(&format!("{:?}: Left", self.left_key));
+        });
+        ui.horizontal(|ui| {
+            if ui.button("modify").clicked() {
+                self.modify_right = true;
+            }
+            ui.label(&format!("{:?}: Right", self.right_key));
+        });
+        ui.horizontal(|ui| {
+            if ui.button("modify").clicked() {
+                self.modify_sprint = true;
+            }
+            ui.label(&format!("{:?}: Sprint", self.sprint_key));
+        });
+        for key in keys.get_pressed() {
+            if self.modify_forward {
+                self.forward_key = *key;
+            } else if self.modify_back {
+                self.back_key = *key;
+            } else if self.modify_left {
+                self.left_key = *key;
+            } else if self.modify_right {
+                self.right_key = *key;
+            } else if self.modify_sprint {
+                self.sprint_key = *key;
+            }
+            self.modify_forward = false;
+            self.modify_back = false;
+            self.modify_left = false;
+            self.modify_right = false;
+            self.modify_sprint = false;
         }
     }
 }
@@ -224,23 +301,22 @@ fn player_move(
             let forward = -Vec3::new(local_z.x, local_z_y, local_z.z);
             let right = Vec3::new(local_z.z, 0.0, -local_z.x);
             let mut run = 1.0;
-
             let mut moving_forward = false;
+
             for key in keys.get_pressed() {
-                match key {
-                    KeyCode::W => {
-                        velocity += forward;
-                        moving_forward = true;
-                    }
-                    KeyCode::S => velocity -= forward,
-                    KeyCode::A => velocity -= right,
-                    KeyCode::D => velocity += right,
-                    _ => (),
+                if &settings.forward_key == key {
+                    velocity += forward;
+                    moving_forward = true;
+                } else if &settings.back_key == key {
+                    velocity -= forward
+                } else if &settings.left_key == key {
+                    velocity -= right
+                } else if &settings.right_key == key {
+                    velocity += right
                 }
             }
-
             for key in keys.get_pressed() {
-                if key == &KeyCode::LShift && moving_forward {
+                if &settings.sprint_key == key && moving_forward {
                     run = settings.run_multiplier
                 }
             }

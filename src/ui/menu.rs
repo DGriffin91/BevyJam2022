@@ -9,6 +9,7 @@ use crate::{
     assets::{
         custom_material::CustomMaterial, light_shaft_material::LightShaftMaterial, GameState,
     },
+    player::MovementSettings,
     world::{level1, LevelAsset},
 };
 
@@ -56,6 +57,8 @@ fn startup_menu(
     mut preferences: ResMut<GamePreferences>,
     mut egui_context: ResMut<EguiContext>,
     asset_keys: ResMut<AssetKeys>,
+    mut movement_settings: ResMut<MovementSettings>,
+    keys: Res<Input<KeyCode>>,
 ) {
     let window = windows.get_primary_mut().unwrap();
 
@@ -84,6 +87,7 @@ fn startup_menu(
                     }
                 });
                 ui.collapsing("Preferences", |ui| {
+                    movement_settings.build_ui(ui, keys);
                     ui.checkbox(
                         &mut preferences.high_res_textures,
                         "High resolution textures",
@@ -102,9 +106,16 @@ fn menu_ui(
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
     mut light_shaft_materials: ResMut<Assets<LightShaftMaterial>>,
     mut level_asset_query: Query<&mut LevelAsset>,
+    mut movement_settings: ResMut<MovementSettings>,
+    keys: Res<Input<KeyCode>>,
 ) {
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
+        egui::Window::new("Preferences").show(egui_context.ctx_mut(), |ui| {
+            movement_settings.build_ui(ui, keys);
+        });
+
+        #[cfg(debug_assertions)]
         egui::Window::new("environment materials").show(egui_context.ctx_mut(), |ui| {
             let mut mat_props = None;
             let mut shaft_props = None;
