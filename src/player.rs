@@ -9,10 +9,11 @@ use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial};
 use heron::rapier_plugin::convert::IntoRapier;
 use heron::rapier_plugin::rapier3d::prelude::RigidBodySet;
 use heron::rapier_plugin::{PhysicsWorld, RigidBodyHandle};
-use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, RotationConstraints};
+use heron::{CollisionLayers, CollisionShape, RigidBody, RotationConstraints};
 
 use crate::assets::custom_material::slider;
 use crate::assets::{AudioAssets, GameState, ModelAssets};
+use crate::enemies::Enemy;
 use crate::Layer;
 
 /// Contains everything needed to add first-person fly camera behavior to your game
@@ -255,7 +256,7 @@ fn setup_player(
             visibility: Visibility { is_visible: false },
             ..Default::default()
         })
-        .insert(Timer::new(Duration::from_secs_f32(6.0), false))
+        .insert(Timer::new(Duration::from_secs_f32(2.0), false))
         .insert(PlayerPolyline);
 
     commands.spawn_bundle(ButtonBundle {
@@ -332,7 +333,7 @@ fn player_move(
                 let abs_move_delta = move_delta.abs();
                 footsteps.move_distance += abs_move_delta.x.max(abs_move_delta.z);
             }
-            //}
+            //}body
         }
     }
 }
@@ -377,13 +378,13 @@ fn player_look(
 }
 
 fn player_fire(
-    mut commands: Commands,
+    //mut commands: Commands,
     windows: Res<Windows>,
     mouse_button_input: Res<Input<MouseButton>>,
     physics_world: PhysicsWorld,
     state: Res<InputState>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    //mut meshes: ResMut<Assets<Mesh>>,
+    //mut materials: ResMut<Assets<StandardMaterial>>,
     player_cams: Query<&GlobalTransform, With<PlayerCam>>,
     player_weapon: Query<&GlobalTransform, With<PlayerWeapon>>,
     mut polylines: ResMut<Assets<Polyline>>,
@@ -398,6 +399,7 @@ fn player_fire(
     >,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut player_events: EventWriter<PlayerEvent>,
+    mut enemies: Query<&mut Enemy>,
 ) {
     let window = windows.get_primary().unwrap();
     if !window.is_focused() || !window.cursor_locked() {
@@ -435,33 +437,37 @@ fn player_fire(
                     .with_masks([Layer::World, Layer::Enemy]),
                 |_| true,
             ) {
-                let mesh = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-                let material = materials.add(StandardMaterial {
-                    base_color: Color::PINK,
-                    ..Default::default()
-                });
+                if let Ok(mut enemy) = enemies.get_mut(collision.entity) {
+                    enemy.health -= 1001;
+                }
 
-                commands
-                    .spawn_bundle(PbrBundle {
-                        mesh: mesh.clone(),
-                        material: material.clone(),
-                        transform: Transform::from_translation(collision.collision_point),
-                        ..Default::default()
-                    })
-                    .insert(RigidBody::Dynamic)
-                    .insert(CollisionShape::Cuboid {
-                        half_extends: Vec3::new(0.5, 0.5, 0.5),
-                        border_radius: None,
-                    })
-                    .insert(PhysicMaterial {
-                        restitution: 0.7,
-                        ..Default::default()
-                    })
-                    .insert(
-                        CollisionLayers::none()
-                            .with_group(Layer::World)
-                            .with_masks(Layer::all()),
-                    );
+                //let mesh = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
+                //let material = materials.add(StandardMaterial {
+                //    base_color: Color::PINK,
+                //    ..Default::default()
+                //});
+
+                //commands
+                //    .spawn_bundle(PbrBundle {
+                //        mesh: mesh.clone(),
+                //        material: material.clone(),
+                //        transform: Transform::from_translation(collision.collision_point),
+                //        ..Default::default()
+                //    })
+                //    .insert(RigidBody::Dynamic)
+                //    .insert(CollisionShape::Cuboid {
+                //        half_extends: Vec3::new(0.5, 0.5, 0.5),
+                //        border_radius: None,
+                //    })
+                //    .insert(PhysicMaterial {
+                //        restitution: 0.7,
+                //        ..Default::default()
+                //    })
+                //    .insert(
+                //        CollisionLayers::none()
+                //            .with_group(Layer::World)
+                //            .with_masks(Layer::all()),
+                //    );
             }
         }
     }

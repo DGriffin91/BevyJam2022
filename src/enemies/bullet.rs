@@ -29,7 +29,7 @@ impl BulletBundle {
             transform: Transform::from_translation(from).looking_at(direction, Vec3::Y),
             global_transform: GlobalTransform::default(),
             rigid_body: RigidBody::Dynamic,
-            collision_shape: CollisionShape::Sphere { radius: 1.0 },
+            collision_shape: CollisionShape::Sphere { radius: 3.0 }, //purposely oversized
             collision_layers: CollisionLayers::none()
                 .with_group(Layer::Bullet)
                 .with_masks([Layer::World, Layer::Player]),
@@ -64,7 +64,7 @@ pub fn handle_bullet_collisions(
     mut collision_events: EventReader<CollisionEvent>,
     mut players: Query<(Entity, &mut Player)>,
     mut player_events: EventWriter<PlayerEvent>,
-    mut bullets: Query<&Bullet>,
+    bullets: Query<&Bullet>,
 ) {
     for collision in collision_events.iter() {
         match collision {

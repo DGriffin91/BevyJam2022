@@ -35,7 +35,7 @@ impl Plugin for EnemiesPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Waypoints::default())
             .insert_resource(EnemiesState::default())
-            .insert_resource(EnemySpawnTimer(Timer::from_seconds(5.0, true)))
+            .insert_resource(EnemySpawnTimer(Timer::from_seconds(1.0, true)))
             //.insert_resource(WaypointTimer(Timer::from_seconds(5.0, false)))
             .insert_resource(UpdateDestinationsTimer(Timer::from_seconds(2.0, true)))
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(spawn_enemies))
@@ -49,7 +49,8 @@ impl Plugin for EnemiesPlugin {
                     .with_system(spawn_enemies_on_timer)
                     .with_system(update_destinations)
                     .with_system(enemies_update_current_destination)
-                    .with_system(enemies_move_to_destination),
+                    .with_system(enemies_move_to_destination)
+                    .with_system(kill_enemy),
             );
     }
 }
@@ -83,16 +84,16 @@ impl Default for EnemiesState {
             enemies_killed: 0,
             current_level: 0,
             levels: [
-                LevelParams::new(8, 4, 1.0),
-                LevelParams::new(16, 5, 1.0),
-                LevelParams::new(24, 6, 1.0),
-                LevelParams::new(32, 7, 1.0),
-                LevelParams::new(64, 8, 1.0),
-                LevelParams::new(96, 9, 1.1),
-                LevelParams::new(128, 10, 1.2),
-                LevelParams::new(192, 10, 1.3),
-                LevelParams::new(256, 10, 1.4),
-                LevelParams::new(384, 10, 1.5),
+                LevelParams::new(8, 6, 1.0),
+                LevelParams::new(16, 7, 1.0),
+                LevelParams::new(24, 8, 1.0),
+                LevelParams::new(32, 9, 1.0),
+                LevelParams::new(64, 10, 1.0),
+                LevelParams::new(96, 11, 1.1),
+                LevelParams::new(128, 12, 1.2),
+                LevelParams::new(192, 12, 1.3),
+                LevelParams::new(256, 12, 1.4),
+                LevelParams::new(384, 12, 1.5),
             ],
             destinations: [0, 1, 2],
         }
@@ -125,9 +126,9 @@ fn update_destinations(
             distances.push((player_transform.translation.distance(*loc), i));
         }
         distances.sort_by(|a, b| (a.0).partial_cmp(&b.0).unwrap());
-        enemies_state.destinations[0] = distances[0].1;
-        enemies_state.destinations[1] = distances[1].1;
-        enemies_state.destinations[2] = distances[2].1;
+        enemies_state.destinations[0] = distances[5].1; //Don't pick the closest one
+        enemies_state.destinations[1] = distances[6].1;
+        enemies_state.destinations[2] = distances[7].1;
     }
 }
 
@@ -140,7 +141,7 @@ fn spawn_enemies_on_timer(
     model_assets: Res<ModelAssets>,
     waypoints: Res<Waypoints>,
     enemies_state: Res<EnemiesState>,
-    enemies: Query<&Transform, (With<Enemy>, Without<Player>)>,
+    enemies: Query<&Transform, (With<Enemy>, Without<Player>, With<Alive>)>,
 ) {
     timer.0.tick(time.delta());
     if !timer.0.just_finished() {
@@ -265,7 +266,7 @@ impl Hash for WaypointForPathfinding {
 
 #[derive(Component)]
 pub struct Enemy {
-    _health: f32,
+    pub health: i32,
     within_range_of_player: bool,
     range: f32,
     current_destination: usize,
@@ -278,12 +279,12 @@ pub struct Enemy {
 impl Default for Enemy {
     fn default() -> Self {
         Enemy {
-            _health: 1000.0,
+            health: 1000,
             within_range_of_player: false,
-            range: 50.0,
+            range: 100.0,
             current_destination: 0,
             update_destination_timer: Timer::from_seconds(2.0, true),
-            move_speed: 100.0,
+            move_speed: 30.0,
             current_random_offset: Vec3::new(0.0, 0.0, 0.0),
             weapon_dammage: 30.0,
         }
@@ -292,6 +293,9 @@ impl Default for Enemy {
 
 #[derive(Component)]
 pub struct EnemyLastFired(Timer);
+
+#[derive(Component)]
+pub struct Alive;
 
 trait EnemyBehaviour {
     fn spawn(commands: &mut Commands, transform: Transform, model_assets: &ModelAssets) -> Entity;
@@ -307,7 +311,7 @@ fn spawn_enemies(mut commands: Commands, model_assets: Res<ModelAssets>) {
 
 fn enemies_update_current_destination(
     time: Res<Time>,
-    mut enemies: Query<&mut Enemy, Without<Player>>,
+    mut enemies: Query<&mut Enemy, (Without<Player>, With<Alive>)>,
     enemies_state: Res<EnemiesState>,
 ) {
     for mut enemy in enemies.iter_mut() {
@@ -322,14 +326,17 @@ fn enemies_update_current_destination(
 
         let mut rng = rand::thread_rng();
         enemy.current_random_offset.x = rng.gen_range(-5.0f32..=5.0f32);
-        enemy.current_random_offset.y = rng.gen_range(-10.0f32..=10.0f32);
+        enemy.current_random_offset.y = rng.gen_range(-15.0f32..=0.0f32);
         enemy.current_random_offset.z = rng.gen_range(-5.0f32..=5.0f32);
     }
 }
 
 fn enemies_move_to_destination(
     mut rigid_bodies: ResMut<RigidBodySet>,
-    mut enemies: Query<(&mut Transform, &mut Enemy, &RigidBodyHandle), Without<Player>>,
+    mut enemies: Query<
+        (&mut Transform, &mut Enemy, &RigidBodyHandle),
+        (Without<Player>, With<Alive>),
+    >,
     waypoints: Res<Waypoints>,
 ) {
     for (mut enemy_transform, enemy, rb) in enemies.iter_mut() {
@@ -361,9 +368,48 @@ fn enemies_move_to_destination(
     }
 }
 
+fn kill_enemy(
+    mut commands: Commands,
+    mut rigid_bodies: ResMut<RigidBodySet>,
+    mut enemies: Query<
+        (Entity, &mut Transform, &mut Enemy, &RigidBodyHandle),
+        (Without<Player>, With<Alive>),
+    >,
+    mut enemies_state: ResMut<EnemiesState>,
+) {
+    for (entity, _enemy_transform, enemy, rb) in enemies.iter_mut() {
+        if enemy.health > 0 {
+            continue;
+        }
+        if let Some(body) = rigid_bodies.get_mut(rb.into_rapier()) {
+            let mut rng = rand::thread_rng();
+            body.apply_torque(
+                [
+                    rng.gen_range(-5.0f32..=5.0f32),
+                    rng.gen_range(-5.0f32..=5.0f32),
+                    rng.gen_range(-5.0f32..=5.0f32),
+                ]
+                .into(),
+                false,
+            );
+            body.apply_impulse([0.0, -500.0, 0.0].into(), false);
+        }
+        commands.entity(entity).remove::<Alive>();
+        // ENEMY KILLED - TODO show kills on screen
+        enemies_state.enemies_killed += 1;
+        // LEVEL UP - TODO show level on screen
+        if enemies_state.enemies_killed >= enemies_state.get_level_params().kills_to_level_up as u32
+        {
+            enemies_state.current_level =
+                (enemies_state.current_level + 1).min(enemies_state.levels.len() - 1);
+            dbg!(enemies_state.current_level);
+        }
+    }
+}
+
 fn enemies_look_at_player(
     players: Query<&Transform, With<Player>>,
-    mut enemies: Query<(&mut Transform, &mut Enemy), Without<Player>>,
+    mut enemies: Query<(&mut Transform, &mut Enemy), (Without<Player>, With<Alive>)>,
 ) {
     if let Some(player_transform) = players.iter().next() {
         for (mut enemy_transform, mut enemy) in enemies.iter_mut() {
@@ -375,7 +421,7 @@ fn enemies_look_at_player(
                 enemy.within_range_of_player = true;
                 let target = enemy_transform
                     .looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
-                enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.04);
+                enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.25);
             } else {
                 enemy.within_range_of_player = false;
             }
@@ -386,7 +432,7 @@ fn enemies_look_at_player(
 fn enemies_fire_at_player(
     mut commands: Commands,
     time: Res<Time>,
-    mut enemies: Query<(&Transform, &mut EnemyLastFired, &mut Enemy)>,
+    mut enemies: Query<(&Transform, &mut EnemyLastFired, &mut Enemy), With<Alive>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     enemies_state: Res<EnemiesState>,

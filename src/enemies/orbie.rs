@@ -3,7 +3,7 @@ use heron::{CollisionLayers, CollisionShape, PhysicMaterial, PhysicsLayer, Rigid
 
 use crate::{assets::ModelAssets, Layer};
 
-use super::{Enemy, EnemyBehaviour, EnemyLastFired};
+use super::{Alive, Enemy, EnemyBehaviour, EnemyLastFired};
 
 #[derive(Component, Default)]
 pub struct OrbieEnemy;
@@ -25,6 +25,7 @@ impl EnemyBehaviour for OrbieEnemy {
             .insert(EnemyLastFired(Timer::from_seconds(0.8, true)))
             .insert(Enemy::default())
             .insert(OrbieEnemy)
+            .insert(Alive)
             .with_children(|parent| {
                 parent.spawn_scene(model_assets.unit2.clone());
             })

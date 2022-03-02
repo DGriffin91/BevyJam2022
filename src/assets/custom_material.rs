@@ -33,6 +33,7 @@ pub struct MaterialSetProp {
     pub blend: f32,
 }
 
+#[allow(dead_code)]
 pub fn log_slider<Num: egui::emath::Numeric>(
     ui: &mut egui::Ui,
     value: &mut Num,
@@ -41,6 +42,8 @@ pub fn log_slider<Num: egui::emath::Numeric>(
 ) {
     ui.add(egui::Slider::new(value, range).logarithmic(true).text(text));
 }
+
+#[allow(dead_code)]
 pub fn slider<Num: egui::emath::Numeric>(
     ui: &mut egui::Ui,
     value: &mut Num,
@@ -50,6 +53,7 @@ pub fn slider<Num: egui::emath::Numeric>(
     ui.add(egui::Slider::new(value, range).text(text));
 }
 impl MaterialSetProp {
+    #[allow(dead_code)]
     pub fn build_ui(&mut self, ui: &mut egui::Ui, label: &str) {
         ui.label(label);
         log_slider(ui, &mut self.scale, 0.0..=100.0, "scale");
