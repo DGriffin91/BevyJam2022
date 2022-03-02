@@ -7,6 +7,7 @@ use bevy::prelude::*;
 use heron::rapier_plugin::{convert::IntoRapier, rapier3d::prelude::RigidBodySet, RigidBodyHandle};
 use pathfinding::directed::astar::astar;
 use rand::{prelude::SliceRandom, Rng};
+use splines::{Interpolation, Spline};
 
 use crate::{
     assets::{GameState, ModelAssets},
@@ -235,12 +236,28 @@ fn waypoint_debug(
 
     println!("{}", path.len());
 
-    for waypoint in path {
+    for waypoint in &path {
         let waypoint = original_waypoints
             .iter_mut()
             .find(|(entity, ..)| waypoint.entity == *entity)
             .unwrap();
         *waypoint.2 = material.clone();
+    }
+
+    let spline_keys = path.iter().enumerate().map(|(i, waypoint)| {
+        println!("> {}", i as f32 / (path.len() as f32 - 1.0));
+        splines::Key::new(
+            i as f32 / (path.len() as f32 - 1.0),
+            waypoint.pos,
+            Interpolation::Cosine,
+        )
+    });
+    let spline = Spline::from_iter(spline_keys);
+
+    for i in 0..100 {
+        println!(">>> {}", i as f32 / 100.0);
+        let p = spline.sample(i as f32 / 100.0);
+        println!("{:?}", p);
     }
 }
 
