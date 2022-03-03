@@ -32,6 +32,7 @@ impl Plugin for PlayerPlugin {
                     .with_system(player_look)
                     .with_system(player_fire)
                     .with_system(update_player_polylines)
+                    .with_system(update_secondary_player_polylines)
                     .with_system(cursor_grab)
                     .with_system(player_change_speed)
                     .with_system(footsteps),
@@ -41,7 +42,7 @@ impl Plugin for PlayerPlugin {
 
 pub enum PlayerEvent {
     Hit,
-    Fire,
+    Fire { alt: bool },
 }
 
 /// Keeps track of mouse motion events, pitch, and yaw
@@ -211,9 +212,14 @@ pub struct PlayerCam;
 struct PlayerPolyline;
 
 #[derive(Component)]
+struct PlayerPolylineSecondary;
+
+#[derive(Component)]
 struct PlayerWeapon {
     fire_rate: f32,
     last_shot: f32,
+    secondary_fire_rate: f32,
+    secondary_fire_last_shot: f32,
 }
 
 /// Spawns the `Camera3dBundle` to be controlled
@@ -248,9 +254,11 @@ fn setup_player(
                             parent.spawn_scene(lasergun.clone());
                         })
                         .insert(PlayerWeapon {
-                            fire_rate: 0.434,
+                            fire_rate: 0.5, //120RPM
                             last_shot: 0.0,
-                        }); //140RPM
+                            secondary_fire_rate: 0.08, //750RPM
+                            secondary_fire_last_shot: 0.0,
+                        });
                 })
                 .insert(PlayerCam);
         });
@@ -262,7 +270,7 @@ fn setup_player(
             }),
             material: polyline_materials.add(PolylineMaterial {
                 width: 30.0,
-                color: Color::RED,
+                color: Color::rgba(1.0, 0.0, 0.0, 0.9),
                 perspective: true,
             }),
             visibility: Visibility { is_visible: false },
@@ -270,6 +278,22 @@ fn setup_player(
         })
         .insert(Timer::new(Duration::from_secs_f32(2.0), false))
         .insert(PlayerPolyline);
+
+    commands
+        .spawn_bundle(PolylineBundle {
+            polyline: polylines.add(Polyline {
+                vertices: vec![Vec3::ZERO, Vec3::ZERO],
+            }),
+            material: polyline_materials.add(PolylineMaterial {
+                width: 10.0,
+                color: Color::rgba(1.0, 0.5, 0.0, 0.9),
+                perspective: true,
+            }),
+            visibility: Visibility { is_visible: false },
+            ..Default::default()
+        })
+        .insert(Timer::new(Duration::from_secs_f32(2.0), false))
+        .insert(PlayerPolylineSecondary);
 
     commands.spawn_bundle(ButtonBundle {
         style: Style {
@@ -417,7 +441,16 @@ fn player_fire(
             &Handle<PolylineMaterial>,
             &mut Timer,
         ),
-        With<PlayerPolyline>,
+        (Without<PlayerPolylineSecondary>, With<PlayerPolyline>),
+    >,
+    mut secondary_polylines_query: Query<
+        (
+            &mut Handle<Polyline>,
+            &mut Visibility,
+            &Handle<PolylineMaterial>,
+            &mut Timer,
+        ),
+        (With<PlayerPolylineSecondary>, Without<PlayerPolyline>),
     >,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut player_events: EventWriter<PlayerEvent>,
@@ -428,7 +461,56 @@ fn player_fire(
         return;
     }
 
-    if mouse_button_input.just_pressed(MouseButton::Left) {
+    if mouse_button_input.pressed(MouseButton::Right) {
+        for (cam_transform, (weapon_transform, mut weapon)) in
+            player_cams.iter().zip(player_weapon.iter_mut())
+        {
+            if time.time_since_startup().as_secs_f32() - weapon.secondary_fire_last_shot
+                < weapon.secondary_fire_rate
+            {
+                return;
+            } else {
+                weapon.secondary_fire_last_shot = time.time_since_startup().as_secs_f32();
+            };
+
+            let pitch = state.pitch;
+            let yaw = -state.yaw;
+            let xz = f32::cos(pitch);
+            let looking_dir = -Vec3::new(-xz * f32::sin(yaw), -f32::sin(pitch), xz * f32::cos(yaw));
+            player_events.send(PlayerEvent::Fire { alt: true });
+
+            for (polyline, mut visibility, material, mut timer) in
+                secondary_polylines_query.iter_mut()
+            {
+                if let Some(polyline) = polylines.get_mut(&*polyline) {
+                    polyline.vertices[0] =
+                        weapon_transform.translation + weapon_transform.forward() * 0.6;
+                    polyline.vertices[1] =
+                        weapon_transform.translation + weapon_transform.forward() * 100.0;
+                }
+                if let Some(material) = polyline_materials.get_mut(material) {
+                    material.color.set_a(1.0);
+                }
+                visibility.is_visible = true;
+                timer.reset();
+            }
+
+            if let Some(collision) = physics_world.ray_cast_with_filter(
+                cam_transform.translation,
+                looking_dir * 100.0,
+                true,
+                CollisionLayers::none()
+                    .with_group(Layer::Raycast)
+                    .with_masks([Layer::World, Layer::Enemy]),
+                |_| true,
+            ) {
+                // TODO move to be triggered by event
+                if let Ok(mut enemy) = enemies.get_mut(collision.entity) {
+                    enemy.health -= 334;
+                }
+            }
+        }
+    } else if mouse_button_input.just_pressed(MouseButton::Left) {
         for (cam_transform, (weapon_transform, mut weapon)) in
             player_cams.iter().zip(player_weapon.iter_mut())
         {
@@ -442,7 +524,7 @@ fn player_fire(
             let yaw = -state.yaw;
             let xz = f32::cos(pitch);
             let looking_dir = -Vec3::new(-xz * f32::sin(yaw), -f32::sin(pitch), xz * f32::cos(yaw));
-            player_events.send(PlayerEvent::Fire);
+            player_events.send(PlayerEvent::Fire { alt: false });
 
             for (polyline, mut visibility, material, mut timer) in polylines_query.iter_mut() {
                 if let Some(polyline) = polylines.get_mut(&*polyline) {
@@ -471,34 +553,6 @@ fn player_fire(
                 if let Ok(mut enemy) = enemies.get_mut(collision.entity) {
                     enemy.health -= 1001;
                 }
-
-                //let mesh = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-                //let material = materials.add(StandardMaterial {
-                //    base_color: Color::PINK,
-                //    ..Default::default()
-                //});
-
-                //commands
-                //    .spawn_bundle(PbrBundle {
-                //        mesh: mesh.clone(),
-                //        material: material.clone(),
-                //        transform: Transform::from_translation(collision.collision_point),
-                //        ..Default::default()
-                //    })
-                //    .insert(RigidBody::Dynamic)
-                //    .insert(CollisionShape::Cuboid {
-                //        half_extends: Vec3::new(0.5, 0.5, 0.5),
-                //        border_radius: None,
-                //    })
-                //    .insert(PhysicMaterial {
-                //        restitution: 0.7,
-                //        ..Default::default()
-                //    })
-                //    .insert(
-                //        CollisionLayers::none()
-                //            .with_group(Layer::World)
-                //            .with_masks(Layer::all()),
-                //    );
             }
         }
     }
@@ -515,6 +569,47 @@ fn update_player_polylines(
             &mut Timer,
         ),
         With<PlayerPolyline>,
+    >,
+    mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
+) {
+    for (polyline, mut visibility, material, mut timer) in polylines_query.iter_mut() {
+        timer.tick(time.delta());
+        let duration = timer.duration().as_secs_f32();
+        let elapsed = timer.elapsed().as_secs_f32();
+        let progress = (duration - elapsed) / duration;
+        if let Some(material) = polyline_materials.get_mut(material) {
+            if timer.just_finished() {
+                material.color.set_a(1.0);
+            } else {
+                // fade out laser over time
+                material.color.set_a(progress);
+            }
+        }
+        if timer.just_finished() {
+            visibility.is_visible = false;
+        }
+        if visibility.is_visible {
+            if let Some(polyline) = polylines.get_mut(&*polyline) {
+                let norm = (polyline.vertices[1] - polyline.vertices[0]).normalize();
+                //move start of laser out along normal over time
+                polyline.vertices[0] += norm * 40.0 * (1.0 - progress);
+            }
+        }
+    }
+}
+
+//TODO Refactor
+fn update_secondary_player_polylines(
+    time: Res<Time>,
+    mut polylines: ResMut<Assets<Polyline>>,
+    mut polylines_query: Query<
+        (
+            &mut Handle<Polyline>,
+            &mut Visibility,
+            &Handle<PolylineMaterial>,
+            &mut Timer,
+        ),
+        With<PlayerPolylineSecondary>,
     >,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
 ) {

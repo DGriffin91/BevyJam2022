@@ -174,6 +174,22 @@ pub struct AudioAssets {
     pub lasergun06: Handle<AudioSource>,
     #[asset(path = "audio/weapons/lasergun/lasergun07.ogg")]
     pub lasergun07: Handle<AudioSource>,
+
+    // Lasergun
+    #[asset(path = "audio/weapons/lasergun_alt/lasergun01.ogg")]
+    pub lasergun_alt01: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun_alt/lasergun02.ogg")]
+    pub lasergun_alt02: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun_alt/lasergun03.ogg")]
+    pub lasergun_alt03: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun_alt/lasergun04.ogg")]
+    pub lasergun_alt04: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun_alt/lasergun05.ogg")]
+    pub lasergun_alt05: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun_alt/lasergun06.ogg")]
+    pub lasergun_alt06: Handle<AudioSource>,
+    #[asset(path = "audio/weapons/lasergun_alt/lasergun07.ogg")]
+    pub lasergun_alt07: Handle<AudioSource>,
 }
 
 impl AudioAssets {
@@ -216,6 +232,19 @@ impl AudioAssets {
             &self.lasergun05,
             &self.lasergun06,
             &self.lasergun07,
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap()
+    }
+    pub fn get_lasergun_alt(&self) -> &Handle<AudioSource> {
+        [
+            &self.lasergun_alt01,
+            &self.lasergun_alt02,
+            &self.lasergun_alt03,
+            &self.lasergun_alt04,
+            &self.lasergun_alt05,
+            &self.lasergun_alt06,
+            &self.lasergun_alt07,
         ]
         .choose(&mut rand::thread_rng())
         .unwrap()

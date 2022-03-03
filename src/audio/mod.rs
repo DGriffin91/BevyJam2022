@@ -80,8 +80,12 @@ fn player_audio_events(
             PlayerEvent::Hit => {
                 audio.play(audio_assets.get_hurt().clone());
             }
-            PlayerEvent::Fire => {
-                audio.play(audio_assets.get_lasergun().clone());
+            PlayerEvent::Fire { alt } => {
+                if *alt {
+                    audio.play(audio_assets.get_lasergun_alt().clone());
+                } else {
+                    audio.play(audio_assets.get_lasergun().clone());
+                }
             }
         }
     }

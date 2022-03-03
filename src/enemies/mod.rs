@@ -311,7 +311,7 @@ impl Default for Enemy {
             update_destination_timer: Timer::from_seconds(2.0, true),
             move_speed: 30.0,
             current_random_offset: Vec3::new(0.0, 0.0, 0.0),
-            weapon_damage: 50.0,
+            weapon_damage: 40.0,
             weapon_splash_radius: 8.0,
         }
     }
