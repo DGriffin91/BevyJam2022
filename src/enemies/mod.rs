@@ -4,6 +4,8 @@ use std::{
 };
 
 use bevy::prelude::*;
+
+use bevy_polyline::Polyline;
 use heron::rapier_plugin::{convert::IntoRapier, rapier3d::prelude::RigidBodySet, RigidBodyHandle};
 use pathfinding::directed::astar::astar;
 use rand::{prelude::SliceRandom, Rng};
@@ -16,17 +18,21 @@ use crate::{
     },
     player::{Player, PlayerEvent},
     ui::{menu::GamePreferences, scoreboard::ScoreboardEvent},
-    world::LevelAsset,
 };
 
 use self::{
-    bullet::{disable_gravity_for_bullets, handle_bullet_collisions, BulletBundle},
-    orbie::OrbieEnemy,
+    bullet::{disable_gravity_for_bullets, handle_bullet_collisions},
+    laserie::{
+        add_lasers_to_laserie, create_laser_polylines, laserie_enemies_fire_at_player,
+        LaserPolyline, LaserieEnemy,
+    },
+    orbie::{orbie_enemies_fire_at_player, OrbieEnemy},
 };
 
 use bevy_kira_audio::Audio;
 
 mod bullet;
+pub mod laserie;
 mod orbie;
 
 #[derive(Default)]
@@ -50,11 +56,14 @@ impl Plugin for EnemiesPlugin {
             }))
             //.insert_resource(WaypointTimer(Timer::from_seconds(5.0, false)))
             .insert_resource(UpdateDestinationsTimer(Timer::from_seconds(2.0, true)))
-            .add_system_set(SystemSet::on_enter(GameState::Playing))
+            .add_system_set(
+                SystemSet::on_enter(GameState::Playing).with_system(create_laser_polylines),
+            )
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
                     .with_system(enemies_look_at)
-                    .with_system(enemies_fire_at_player)
+                    .with_system(orbie_enemies_fire_at_player)
+                    .with_system(laserie_enemies_fire_at_player)
                     .with_system(handle_bullet_collisions)
                     .with_system(disable_gravity_for_bullets)
                     //.with_system(waypoint_debug)
@@ -65,7 +74,8 @@ impl Plugin for EnemiesPlugin {
                     .with_system(kill_enemy)
                     .with_system(progress_explosions)
                     .with_system(clean_up_dead)
-                    .with_system(player_takes_damage),
+                    .with_system(player_takes_damage)
+                    .with_system(add_lasers_to_laserie),
             );
     }
 }
@@ -186,11 +196,19 @@ fn spawn_enemies_on_timer(
                 continue 'outer;
             }
         }
-        OrbieEnemy::spawn(
-            &mut commands,
-            Transform::from_xyz(spawn_point.x, spawn_point.y, spawn_point.z),
-            &model_assets,
-        );
+        if rand::thread_rng().gen_range(0..=1) == 0 {
+            LaserieEnemy::spawn(
+                &mut commands,
+                Transform::from_xyz(spawn_point.x, spawn_point.y, spawn_point.z),
+                &model_assets,
+            );
+        } else {
+            OrbieEnemy::spawn(
+                &mut commands,
+                Transform::from_xyz(spawn_point.x, spawn_point.y, spawn_point.z),
+                &model_assets,
+            );
+        }
         return;
     }
 }
@@ -308,6 +326,11 @@ impl Hash for WaypointForPathfinding {
     }
 }
 
+pub enum EnemyKind {
+    Orbie,
+    Laserie,
+}
+
 #[derive(Component)]
 pub struct Enemy {
     pub health: i32,
@@ -319,6 +342,8 @@ pub struct Enemy {
     move_speed: f32,
     weapon_damage: f32,
     weapon_splash_radius: f32,
+    rotate_lerp: f32,
+    kind: EnemyKind,
 }
 
 impl Default for Enemy {
@@ -333,6 +358,8 @@ impl Default for Enemy {
             current_random_offset: Vec3::new(0.0, 0.0, 0.0),
             weapon_damage: 40.0,
             weapon_splash_radius: 8.0,
+            rotate_lerp: 0.04,
+            kind: EnemyKind::Orbie,
         }
     }
 }
@@ -428,6 +455,8 @@ fn kill_enemy(
     audio_assets: Res<AudioAssets>,
     mut scoreboard_events: EventWriter<ScoreboardEvent>,
     preferences: Res<GamePreferences>,
+    mut laser_polylines: Query<&mut LaserPolyline>,
+    mut polylines: ResMut<Assets<Polyline>>,
 ) {
     for (entity, enemy_transform, enemy, rb) in enemies.iter_mut() {
         if enemy.health > 0 {
@@ -491,6 +520,15 @@ fn kill_enemy(
                 (enemies_state.current_level + 1).min(enemies_state.levels.len() - 1);
             scoreboard_events.send(ScoreboardEvent::LevelUp);
         }
+        for mut laser_polyline in laser_polylines.iter_mut() {
+            if laser_polyline.laserie == Some(entity) {
+                laser_polyline.laserie = None;
+                if let Some(poly) = polylines.get_mut(laser_polyline.polyline.clone()) {
+                    poly.vertices[0] = Vec3::ZERO;
+                    poly.vertices[1] = Vec3::ZERO;
+                }
+            }
+        }
     }
 }
 
@@ -506,81 +544,23 @@ fn enemies_look_at(
                     .translation
                     .distance(player_transform.translation)
                     <= enemy.range
-                    && player.health > 0
+                    && player.health > 0.0
                 {
                     enemy.within_range_of_player = true;
                     let target = enemy_transform
                         .looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
-                    enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.9);
+                    // TODO limit to y rotation?
+                    // if let EnemyKind::Laserie = enemy.kind {
+                    //     let rot = target.rotation.to_euler(EulerRot::XYZ);
+                    //     target.rotation = Quat::from_euler(EulerRot::XYZ, 0.0, rot.1, 0.0);
+                    // }
+                    enemy_transform.rotation = enemy_transform
+                        .rotation
+                        .lerp(target.rotation, enemy.rotate_lerp);
                 } else {
                     enemy.within_range_of_player = false;
                 }
             }
-        }
-    }
-}
-
-fn enemies_fire_at_player(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut enemies: Query<(&Transform, &mut EnemyLastFired, &mut Enemy), With<Alive>>,
-    mut orb_materials: ResMut<Assets<OrbMaterial>>,
-    enemies_state: Res<EnemiesState>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    audio: Res<Audio>,
-    audio_assets: Res<AudioAssets>,
-    player: Query<&Player>,
-) {
-    if let Some(player) = player.iter().next() {
-        if player.health <= 0 {
-            return;
-        }
-    }
-    for (transform, mut enemy_last_fired, enemy) in enemies.iter_mut() {
-        enemy_last_fired.0.tick(time.delta());
-        if enemy_last_fired.0.just_finished() && enemy.within_range_of_player {
-            // Shoot at player
-            commands
-                .spawn_bundle(BulletBundle::shoot(
-                    transform.translation,
-                    transform.forward(),
-                    (enemy.weapon_damage as f32
-                        * enemies_state.get_level_params().damage_multiplier)
-                        as i32,
-                    enemy.weapon_splash_radius,
-                ))
-                .with_children(|parent| {
-                    // // Debug hit box
-                    let orb_material_props = OrbProperties {
-                        color_tint: Vec3::new(0.5, 0.5, 1.0),
-                        radius: 0.0,
-                        inner_radius: 0.28,
-                        alpha: 1.0,
-                        ..Default::default()
-                    };
-                    let orb_material = orb_materials.add(OrbMaterial {
-                        material_properties: orb_material_props,
-                        noise_texture: None,
-                    });
-                    let mesh = meshes.add(Mesh::from(shape::Icosphere {
-                        radius: 2.0,
-                        subdivisions: 1,
-                    })); //TODO use billboard
-                    parent
-                        .spawn()
-                        .insert_bundle(MaterialMeshBundle {
-                            mesh,
-                            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                            material: orb_material.clone(),
-                            ..Default::default()
-                        })
-                        .insert(LevelAsset::OrbMaterial {
-                            properties: orb_material_props,
-                            handle: orb_material,
-                        });
-                });
-            // TODO use event
-            audio.play(audio_assets.get_unit2_fire().clone());
         }
     }
 }

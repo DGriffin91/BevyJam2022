@@ -161,7 +161,7 @@ fn update_fail_message(
     } in players.iter()
     {
         for mut screen_message in screen_messages.iter_mut() {
-            if health <= &0 {
+            if health <= &0.0 {
                 *screen_message = ScreenMessage::Failed;
             }
         }

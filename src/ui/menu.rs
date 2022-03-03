@@ -4,13 +4,14 @@ use bevy_egui::{
     egui::{self, Align2, FontDefinitions, Pos2},
     EguiContext,
 };
+use bevy_polyline::Polyline;
 
 use crate::{
     assets::{
         custom_material::CustomMaterial, light_shaft_material::LightShaftMaterial,
         orb_material::OrbMaterial, GameState,
     },
-    enemies::{EnemiesState, Enemy, EnemySpawnTimer},
+    enemies::{laserie::LaserPolyline, EnemiesState, Enemy, EnemySpawnTimer},
     player::{MovementSettings, Player},
     world::{level1, LevelAsset},
 };
@@ -120,6 +121,8 @@ fn menu_ui(
     mut scoreboard_events: EventWriter<ScoreboardEvent>,
     mut enemy_spawn_timer: ResMut<EnemySpawnTimer>,
     mut screen_messages: Query<&mut ScreenMessage>,
+    //mut polylines: ResMut<Assets<Polyline>>,
+    mut laser_polylines: Query<&mut LaserPolyline>,
 ) {
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
@@ -147,6 +150,13 @@ fn menu_ui(
                         enemy_spawn_timer.0.pause();
                         for mut screen_message in screen_messages.iter_mut() {
                             *screen_message = ScreenMessage::PressFire;
+                        }
+                        for mut laser_polyline in laser_polylines.iter_mut() {
+                            laser_polyline.laserie = None;
+                            //if let Some(poly) = polylines.get_mut(laser_polyline.polyline.clone()) {
+                            //    poly.vertices[0] = Vec3::ZERO;
+                            //    poly.vertices[1] = Vec3::ZERO;
+                            //}
                         }
                     }
                 });

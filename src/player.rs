@@ -9,7 +9,9 @@ use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial};
 use heron::rapier_plugin::convert::IntoRapier;
 use heron::rapier_plugin::rapier3d::prelude::RigidBodySet;
 use heron::rapier_plugin::{PhysicsWorld, RigidBodyHandle};
-use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, RotationConstraints};
+use heron::{
+    CollisionLayers, CollisionShape, PhysicMaterial, PhysicsLayer, RigidBody, RotationConstraints,
+};
 
 use crate::assets::custom_material::slider;
 use crate::assets::{AudioAssets, GameState, ModelAssets};
@@ -169,9 +171,12 @@ impl Default for PlayerBundle {
             transform: Transform::from_xyz(0.0, 3.0, 100.0),
             global_tranform: GlobalTransform::default(),
             rigid_body: RigidBody::Dynamic,
-            collision_layers: CollisionLayers::none()
-                .with_group(Layer::Player)
-                .with_masks([Layer::Bullet, Layer::Enemy, Layer::World]),
+            collision_layers: CollisionLayers::from_bits(
+                Layer::Player.to_bits(),
+                Layer::all_bits(),
+            )
+            .with_group(Layer::Player)
+            .with_masks([Layer::Bullet, Layer::Enemy, Layer::World]),
             collision_shape: CollisionShape::Capsule {
                 half_segment: 1.0,
                 radius: 0.5,
@@ -188,15 +193,15 @@ impl Default for PlayerBundle {
 
 #[derive(Component)]
 pub struct Player {
-    pub health: i32,
-    pub max_health: i32,
+    pub health: f32,
+    pub max_health: f32,
 }
 
 impl Default for Player {
     fn default() -> Self {
         Player {
-            health: 1000,
-            max_health: 1000,
+            health: 1000.0,
+            max_health: 1000.0,
         }
     }
 }
@@ -465,7 +470,7 @@ fn player_fire(
         return;
     }
     if let Some(player) = player.iter().next() {
-        if player.health <= 0 {
+        if player.health <= 0.0 {
             return;
         }
         if mouse_button_input.pressed(MouseButton::Right) {

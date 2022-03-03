@@ -26,7 +26,7 @@ pub struct BulletBundle {
 }
 
 impl BulletBundle {
-    pub fn shoot(from: Vec3, direction: Vec3, damage: i32, splash_radius: f32) -> Self {
+    pub fn shoot(from: Vec3, direction: Vec3, damage: f32, splash_radius: f32) -> Self {
         BulletBundle {
             bullet: Bullet {
                 damage,
@@ -50,7 +50,7 @@ impl BulletBundle {
 
 #[derive(Component)]
 pub struct Bullet {
-    damage: i32,
+    damage: f32,
     splash_radius: f32,
 }
 
@@ -108,7 +108,7 @@ pub fn handle_bullet_collisions(
                         //Splash Damage
                         {
                             player_events.send(PlayerEvent::Hit);
-                            player.health -= (bullet.damage as f32 * 0.5) as i32;
+                            player.health -= bullet.damage * 0.5;
                         }
                     }
                 }
