@@ -45,11 +45,11 @@ fn setup_scoreboard(mut commands: Commands, font_assets: Res<FontAssets>) {
         .spawn_bundle(TextBundle {
             text: Text {
                 sections: vec![TextSection {
-                    value: "Score: ".to_string(),
+                    value: "".to_string(),
                     style: TextStyle {
                         font: font_assets.fira_mono_medium.clone(),
                         font_size: 32.0,
-                        color: Color::rgb(0.6, 0.6, 0.9),
+                        color: Color::WHITE,
                     },
                 }],
                 ..Default::default()

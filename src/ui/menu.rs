@@ -124,28 +124,32 @@ fn menu_ui(
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
         egui::Window::new("Preferences")
+            .resizable(false)
+            .collapsible(false)
             .default_pos(Pos2::new(10.0, 200.0))
             .show(egui_context.ctx_mut(), |ui| {
-                if ui.button("Continue").clicked() {
-                    window.set_cursor_lock_mode(true);
-                    window.set_cursor_visibility(false);
-                }
-                if ui.button("Restart").clicked() {
-                    // TODO move elsewhere, trigger with event
-                    if let Some((mut player, mut trans)) = players.iter_mut().next() {
-                        player.health = player.max_health;
-                        *trans = Transform::from_xyz(0.0, 3.0, 100.0);
+                ui.vertical_centered_justified(|ui| {
+                    if ui.button("Continue").clicked() {
+                        window.set_cursor_lock_mode(true);
+                        window.set_cursor_visibility(false);
                     }
-                    for entity in enemies.iter() {
-                        commands.entity(entity).despawn_recursive();
+                    if ui.button("Restart").clicked() {
+                        // TODO move elsewhere, trigger with event
+                        if let Some((mut player, mut trans)) = players.iter_mut().next() {
+                            player.health = player.max_health;
+                            *trans = Transform::from_xyz(0.0, 3.0, 100.0);
+                        }
+                        for entity in enemies.iter() {
+                            commands.entity(entity).despawn_recursive();
+                        }
+                        scoreboard_events.send(ScoreboardEvent::Reset);
+                        *enemies_state = EnemiesState::default();
+                        enemy_spawn_timer.0.pause();
+                        for mut screen_message in screen_messages.iter_mut() {
+                            *screen_message = ScreenMessage::PressFire;
+                        }
                     }
-                    scoreboard_events.send(ScoreboardEvent::Reset);
-                    *enemies_state = EnemiesState::default();
-                    enemy_spawn_timer.0.pause();
-                    for mut screen_message in screen_messages.iter_mut() {
-                        *screen_message = ScreenMessage::PressFire;
-                    }
-                }
+                });
                 movement_settings.build_ui(ui, keys);
             });
 

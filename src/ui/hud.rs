@@ -59,7 +59,7 @@ fn setup_health_bar(mut commands: Commands) {
                 position_type: PositionType::Absolute,
                 ..Default::default()
             },
-            color: Color::rgba(0.9, 0.9, 0.9, 0.2).into(),
+            color: Color::rgba(1.0, 1.0, 1.0, 0.1).into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -124,7 +124,7 @@ fn setup_fail_message(mut commands: Commands, font_assets: Res<FontAssets>) {
                     style: TextStyle {
                         font: font_assets.fira_mono_medium.clone(),
                         font_size: 48.0,
-                        color: Color::rgba(0.0, 0.0, 0.0, 1.0),
+                        color: Color::WHITE,
                     },
                 }],
                 // TODO tried to align center, gave up for now
