@@ -40,10 +40,14 @@ impl Plugin for EnemiesPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Waypoints::default())
             .insert_resource(EnemiesState::default())
-            .insert_resource(EnemySpawnTimer(Timer::from_seconds(1.0, true)))
+            .insert_resource(EnemySpawnTimer({
+                let mut timer = Timer::from_seconds(1.0, true);
+                timer.pause();
+                timer
+            }))
             //.insert_resource(WaypointTimer(Timer::from_seconds(5.0, false)))
             .insert_resource(UpdateDestinationsTimer(Timer::from_seconds(2.0, true)))
-            .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(spawn_enemies))
+            .add_system_set(SystemSet::on_enter(GameState::Playing))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
                     .with_system(enemies_look_at_player)
@@ -140,7 +144,7 @@ fn update_destinations(
     }
 }
 
-struct EnemySpawnTimer(Timer);
+pub struct EnemySpawnTimer(pub Timer);
 
 fn spawn_enemies_on_timer(
     time: Res<Time>,
@@ -330,14 +334,6 @@ pub struct Dead {
 
 trait EnemyBehaviour {
     fn spawn(commands: &mut Commands, transform: Transform, model_assets: &ModelAssets) -> Entity;
-}
-
-fn spawn_enemies(mut commands: Commands, model_assets: Res<ModelAssets>) {
-    OrbieEnemy::spawn(
-        &mut commands,
-        Transform::from_xyz(0.0, 18.0, -10.0).looking_at(Vec3::ZERO * -Vec3::X, Vec3::Y),
-        &model_assets,
-    );
 }
 
 fn enemies_update_current_destination(

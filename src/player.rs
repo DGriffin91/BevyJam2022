@@ -13,7 +13,7 @@ use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, Rotation
 
 use crate::assets::custom_material::slider;
 use crate::assets::{AudioAssets, GameState, ModelAssets};
-use crate::enemies::Enemy;
+use crate::enemies::{Enemy, EnemySpawnTimer};
 use crate::Layer;
 
 /// Contains everything needed to add first-person fly camera behavior to your game
@@ -455,6 +455,7 @@ fn player_fire(
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut player_events: EventWriter<PlayerEvent>,
     mut enemies: Query<&mut Enemy>,
+    mut enemy_spawn_timer: ResMut<EnemySpawnTimer>,
 ) {
     let window = windows.get_primary().unwrap();
     if !window.is_focused() || !window.cursor_locked() {
@@ -462,6 +463,7 @@ fn player_fire(
     }
 
     if mouse_button_input.pressed(MouseButton::Right) {
+        enemy_spawn_timer.0.unpause();
         for (cam_transform, (weapon_transform, mut weapon)) in
             player_cams.iter().zip(player_weapon.iter_mut())
         {
@@ -511,6 +513,7 @@ fn player_fire(
             }
         }
     } else if mouse_button_input.just_pressed(MouseButton::Left) {
+        enemy_spawn_timer.0.unpause();
         for (cam_transform, (weapon_transform, mut weapon)) in
             player_cams.iter().zip(player_weapon.iter_mut())
         {
