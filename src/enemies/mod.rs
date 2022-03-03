@@ -15,6 +15,7 @@ use crate::{
         AudioAssets, GameState, ModelAssets,
     },
     player::{Player, PlayerEvent},
+    ui::scoreboard::ScoreboardEvent,
     world::LevelAsset,
 };
 
@@ -425,6 +426,7 @@ fn kill_enemy(
     mut meshes: ResMut<Assets<Mesh>>,
     audio: Res<Audio>,
     audio_assets: Res<AudioAssets>,
+    mut scoreboard_events: EventWriter<ScoreboardEvent>,
 ) {
     for (entity, enemy_transform, enemy, rb) in enemies.iter_mut() {
         if enemy.health > 0 {
@@ -478,14 +480,13 @@ fn kill_enemy(
         });
         // TODO use event
         audio.play(audio_assets.get_unit2_explosion().clone());
-        // ENEMY KILLED - TODO show kills on screen
         enemies_state.enemies_killed += 1;
-        // LEVEL UP - TODO show level on screen
+        scoreboard_events.send(ScoreboardEvent::Kill);
         if enemies_state.enemies_killed >= enemies_state.get_level_params().kills_to_level_up as u32
         {
             enemies_state.current_level =
                 (enemies_state.current_level + 1).min(enemies_state.levels.len() - 1);
-            dbg!(enemies_state.current_level);
+            scoreboard_events.send(ScoreboardEvent::LevelUp);
         }
     }
 }

@@ -49,7 +49,7 @@ fn setup_health_bar(mut commands: Commands) {
                 position_type: PositionType::Absolute,
                 ..Default::default()
             },
-            color: Color::WHITE.into(),
+            color: Color::rgba(0.9, 0.9, 0.9, 0.2).into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -59,7 +59,7 @@ fn setup_health_bar(mut commands: Commands) {
                         size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
                         ..Default::default()
                     },
-                    color: Color::RED.into(),
+                    color: Color::rgba(1.0, 0.0, 0.0, 0.7).into(),
                     ..Default::default()
                 })
                 .insert(Animator::new(Tween::new(
