@@ -5,7 +5,6 @@ use std::{
 
 use bevy::prelude::*;
 
-use bevy_polyline::Polyline;
 use heron::rapier_plugin::{convert::IntoRapier, rapier3d::prelude::RigidBodySet, RigidBodyHandle};
 use pathfinding::directed::astar::astar;
 use rand::{prelude::SliceRandom, Rng};
@@ -23,8 +22,7 @@ use crate::{
 use self::{
     bullet::{disable_gravity_for_bullets, handle_bullet_collisions},
     laserie::{
-        add_lasers_to_laserie, create_laser_polylines, laserie_enemies_fire_at_player,
-        LaserPolyline, LaserieEnemy,
+        add_lasers_to_laserie, laserie_enemies_fire_at_player, turn_off_dead_laser, LaserieEnemy,
     },
     orbie::{orbie_enemies_fire_at_player, OrbieEnemy},
 };
@@ -56,9 +54,7 @@ impl Plugin for EnemiesPlugin {
             }))
             //.insert_resource(WaypointTimer(Timer::from_seconds(5.0, false)))
             .insert_resource(UpdateDestinationsTimer(Timer::from_seconds(2.0, true)))
-            .add_system_set(
-                SystemSet::on_enter(GameState::Playing).with_system(create_laser_polylines),
-            )
+            .add_system_set(SystemSet::on_enter(GameState::Playing))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
                     .with_system(enemies_look_at)
@@ -75,7 +71,8 @@ impl Plugin for EnemiesPlugin {
                     .with_system(progress_explosions)
                     .with_system(clean_up_dead)
                     .with_system(player_takes_damage)
-                    .with_system(add_lasers_to_laserie),
+                    .with_system(add_lasers_to_laserie)
+                    .with_system(turn_off_dead_laser),
             );
     }
 }
@@ -326,11 +323,6 @@ impl Hash for WaypointForPathfinding {
     }
 }
 
-pub enum EnemyKind {
-    Orbie,
-    Laserie,
-}
-
 #[derive(Component)]
 pub struct Enemy {
     pub health: i32,
@@ -343,7 +335,6 @@ pub struct Enemy {
     weapon_damage: f32,
     weapon_splash_radius: f32,
     rotate_lerp: f32,
-    kind: EnemyKind,
 }
 
 impl Default for Enemy {
@@ -359,7 +350,6 @@ impl Default for Enemy {
             weapon_damage: 40.0,
             weapon_splash_radius: 8.0,
             rotate_lerp: 0.04,
-            kind: EnemyKind::Orbie,
         }
     }
 }
@@ -455,8 +445,6 @@ fn kill_enemy(
     audio_assets: Res<AudioAssets>,
     mut scoreboard_events: EventWriter<ScoreboardEvent>,
     preferences: Res<GamePreferences>,
-    mut laser_polylines: Query<&mut LaserPolyline>,
-    mut polylines: ResMut<Assets<Polyline>>,
 ) {
     for (entity, enemy_transform, enemy, rb) in enemies.iter_mut() {
         if enemy.health > 0 {
@@ -519,15 +507,6 @@ fn kill_enemy(
             enemies_state.current_level =
                 (enemies_state.current_level + 1).min(enemies_state.levels.len() - 1);
             scoreboard_events.send(ScoreboardEvent::LevelUp);
-        }
-        for mut laser_polyline in laser_polylines.iter_mut() {
-            if laser_polyline.laserie == Some(entity) {
-                laser_polyline.laserie = None;
-                if let Some(poly) = polylines.get_mut(laser_polyline.polyline.clone()) {
-                    poly.vertices[0] = Vec3::ZERO;
-                    poly.vertices[1] = Vec3::ZERO;
-                }
-            }
         }
     }
 }
@@ -607,7 +586,7 @@ fn player_takes_damage(
     mut enemies_state: ResMut<EnemiesState>,
 ) {
     for player_event in player_events.iter() {
-        if let PlayerEvent::Hit = player_event {
+        if let PlayerEvent::Hit { laser: _laser } = player_event {
             enemies_state.last_time_player_took_damage = time.seconds_since_startup() as f32;
         }
     }

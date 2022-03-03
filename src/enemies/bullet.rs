@@ -95,7 +95,7 @@ pub fn handle_bullet_collisions(
                 if let Ok((bullet_transform, bullet)) = bullets.get(bullet_ent) {
                     if is_player(other) {
                         if let Ok((_, _, mut player)) = players.get_mut(other_ent) {
-                            player_events.send(PlayerEvent::Hit);
+                            player_events.send(PlayerEvent::Hit { laser: false });
                             player.health -= bullet.damage;
                         }
                     } else if let Some((_entity, player_transform, mut player)) =
@@ -107,7 +107,7 @@ pub fn handle_bullet_collisions(
                             < bullet.splash_radius
                         //Splash Damage
                         {
-                            player_events.send(PlayerEvent::Hit);
+                            player_events.send(PlayerEvent::Hit { laser: false });
                             player.health -= bullet.damage * 0.5;
                         }
                     }

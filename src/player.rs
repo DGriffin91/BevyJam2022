@@ -44,7 +44,7 @@ impl Plugin for PlayerPlugin {
 }
 
 pub enum PlayerEvent {
-    Hit,
+    Hit { laser: bool },
     Fire { alt: bool },
 }
 

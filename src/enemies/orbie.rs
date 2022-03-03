@@ -11,9 +11,7 @@ use crate::{
     Layer,
 };
 
-use super::{
-    bullet::BulletBundle, Alive, EnemiesState, Enemy, EnemyBehaviour, EnemyKind, EnemyLastFired,
-};
+use super::{bullet::BulletBundle, Alive, EnemiesState, Enemy, EnemyBehaviour, EnemyLastFired};
 
 use bevy_kira_audio::Audio;
 
@@ -42,7 +40,6 @@ impl EnemyBehaviour for OrbieEnemy {
                 move_speed: 30.0,
                 weapon_damage: 40.0,
                 weapon_splash_radius: 8.0,
-                kind: EnemyKind::Orbie,
                 rotate_lerp: 0.9,
                 ..Default::default()
             })

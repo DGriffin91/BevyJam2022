@@ -77,8 +77,10 @@ fn player_audio_events(
 ) {
     for player_event in player_events.iter() {
         match player_event {
-            PlayerEvent::Hit => {
-                audio.play(audio_assets.get_hurt().clone());
+            PlayerEvent::Hit { laser } => {
+                if !laser {
+                    audio.play(audio_assets.get_hurt().clone());
+                }
             }
             PlayerEvent::Fire { alt } => {
                 if *alt {
