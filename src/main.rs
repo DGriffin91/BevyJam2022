@@ -7,9 +7,9 @@ use game::GamePlugin;
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            title: "app".to_string(),
-            width: 1920.0,
-            height: 1080.0,
+            title: "Confluence of Futility".to_string(),
+            width: 1280.0,
+            height: 720.0,
             position: None,
             resize_constraints: WindowResizeConstraints {
                 min_width: 256.0,
@@ -25,7 +25,7 @@ fn main() {
             mode: WindowMode::Windowed,
             transparent: false,
             #[cfg(target_arch = "wasm32")]
-            canvas: Some(String::from("#can")),
+            canvas: None,
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)

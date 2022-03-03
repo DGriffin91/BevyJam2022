@@ -5,14 +5,19 @@ use bevy_egui::{
     EguiContext,
 };
 
+#[cfg(debug_assertions)]
+use crate::assets::{
+    custom_material::CustomMaterial, light_shaft_material::LightShaftMaterial,
+    orb_material::OrbMaterial,
+};
+#[cfg(debug_assertions)]
+use crate::world::LevelAsset;
+
 use crate::{
-    assets::{
-        custom_material::CustomMaterial, light_shaft_material::LightShaftMaterial,
-        orb_material::OrbMaterial, GameState,
-    },
+    assets::GameState,
     enemies::{EnemiesState, Enemy, EnemySpawnTimer},
     player::{MovementSettings, Player},
-    world::{level1, LevelAsset},
+    world::level1,
 };
 
 use super::{hud::ScreenMessage, scoreboard::ScoreboardEvent};
@@ -108,10 +113,10 @@ fn menu_ui(
     mut commands: Commands,
     mut windows: ResMut<Windows>,
     mut egui_context: ResMut<EguiContext>,
-    mut custom_materials: ResMut<Assets<CustomMaterial>>,
-    mut light_shaft_materials: ResMut<Assets<LightShaftMaterial>>,
-    mut orb_materials: ResMut<Assets<OrbMaterial>>,
-    mut level_asset_query: Query<&mut LevelAsset>,
+    #[cfg(debug_assertions)] mut custom_materials: ResMut<Assets<CustomMaterial>>,
+    #[cfg(debug_assertions)] mut light_shaft_materials: ResMut<Assets<LightShaftMaterial>>,
+    #[cfg(debug_assertions)] mut orb_materials: ResMut<Assets<OrbMaterial>>,
+    #[cfg(debug_assertions)] mut level_asset_query: Query<&mut LevelAsset>,
     mut movement_settings: ResMut<MovementSettings>,
     keys: Res<Input<KeyCode>>,
     mut players: Query<(&mut Player, &mut Transform)>,

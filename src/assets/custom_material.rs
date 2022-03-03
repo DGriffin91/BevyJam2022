@@ -80,6 +80,7 @@ pub struct MaterialProperties {
 }
 
 impl MaterialProperties {
+    #[allow(dead_code)]
     pub fn build_ui(&mut self, ui: &mut egui::Ui) {
         if ui.button("Debug Print").clicked() {
             dbg!(&self);

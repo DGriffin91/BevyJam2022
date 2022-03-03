@@ -18,6 +18,7 @@ impl Plugin for WorldPlugin {
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Component, Debug)]
 pub enum LevelAsset {
     CustomMaterial {
