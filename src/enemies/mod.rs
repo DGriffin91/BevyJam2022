@@ -53,7 +53,7 @@ impl Plugin for EnemiesPlugin {
             .add_system_set(SystemSet::on_enter(GameState::Playing))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
-                    .with_system(enemies_look_at_player)
+                    .with_system(enemies_look_at)
                     .with_system(enemies_fire_at_player)
                     .with_system(handle_bullet_collisions)
                     .with_system(disable_gravity_for_bullets)
@@ -491,23 +491,27 @@ fn kill_enemy(
     }
 }
 
-fn enemies_look_at_player(
+fn enemies_look_at(
     players: Query<&Transform, With<Player>>,
     mut enemies: Query<(&mut Transform, &mut Enemy), (Without<Player>, With<Alive>)>,
+    player: Query<&Player>,
 ) {
-    if let Some(player_transform) = players.iter().next() {
-        for (mut enemy_transform, mut enemy) in enemies.iter_mut() {
-            if enemy_transform
-                .translation
-                .distance(player_transform.translation)
-                <= enemy.range
-            {
-                enemy.within_range_of_player = true;
-                let target = enemy_transform
-                    .looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
-                enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.9);
-            } else {
-                enemy.within_range_of_player = false;
+    if let Some(player) = player.iter().next() {
+        if let Some(player_transform) = players.iter().next() {
+            for (mut enemy_transform, mut enemy) in enemies.iter_mut() {
+                if enemy_transform
+                    .translation
+                    .distance(player_transform.translation)
+                    <= enemy.range
+                    && player.health > 0
+                {
+                    enemy.within_range_of_player = true;
+                    let target = enemy_transform
+                        .looking_at(player_transform.translation + Vec3::Y * 1.5, Vec3::Y);
+                    enemy_transform.rotation = enemy_transform.rotation.lerp(target.rotation, 0.9);
+                } else {
+                    enemy.within_range_of_player = false;
+                }
             }
         }
     }
@@ -522,7 +526,13 @@ fn enemies_fire_at_player(
     mut meshes: ResMut<Assets<Mesh>>,
     audio: Res<Audio>,
     audio_assets: Res<AudioAssets>,
+    player: Query<&Player>,
 ) {
+    if let Some(player) = player.iter().next() {
+        if player.health <= 0 {
+            return;
+        }
+    }
     for (transform, mut enemy_last_fired, enemy) in enemies.iter_mut() {
         enemy_last_fired.0.tick(time.delta());
         if enemy_last_fired.0.just_finished() && enemy.within_range_of_player {

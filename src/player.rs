@@ -456,105 +456,112 @@ fn player_fire(
     mut player_events: EventWriter<PlayerEvent>,
     mut enemies: Query<&mut Enemy>,
     mut enemy_spawn_timer: ResMut<EnemySpawnTimer>,
+    player: Query<&Player>,
 ) {
     let window = windows.get_primary().unwrap();
     if !window.is_focused() || !window.cursor_locked() {
         return;
     }
-
-    if mouse_button_input.pressed(MouseButton::Right) {
-        enemy_spawn_timer.0.unpause();
-        for (cam_transform, (weapon_transform, mut weapon)) in
-            player_cams.iter().zip(player_weapon.iter_mut())
-        {
-            if time.time_since_startup().as_secs_f32() - weapon.secondary_fire_last_shot
-                < weapon.secondary_fire_rate
-            {
-                return;
-            } else {
-                weapon.secondary_fire_last_shot = time.time_since_startup().as_secs_f32();
-            };
-
-            let pitch = state.pitch;
-            let yaw = -state.yaw;
-            let xz = f32::cos(pitch);
-            let looking_dir = -Vec3::new(-xz * f32::sin(yaw), -f32::sin(pitch), xz * f32::cos(yaw));
-            player_events.send(PlayerEvent::Fire { alt: true });
-
-            for (polyline, mut visibility, material, mut timer) in
-                secondary_polylines_query.iter_mut()
-            {
-                if let Some(polyline) = polylines.get_mut(&*polyline) {
-                    polyline.vertices[0] =
-                        weapon_transform.translation + weapon_transform.forward() * 0.6;
-                    polyline.vertices[1] =
-                        weapon_transform.translation + weapon_transform.forward() * 100.0;
-                }
-                if let Some(material) = polyline_materials.get_mut(material) {
-                    material.color.set_a(1.0);
-                }
-                visibility.is_visible = true;
-                timer.reset();
-            }
-
-            if let Some(collision) = physics_world.ray_cast_with_filter(
-                cam_transform.translation,
-                looking_dir * 100.0,
-                true,
-                CollisionLayers::none()
-                    .with_group(Layer::Raycast)
-                    .with_masks([Layer::World, Layer::Enemy]),
-                |_| true,
-            ) {
-                // TODO move to be triggered by event
-                if let Ok(mut enemy) = enemies.get_mut(collision.entity) {
-                    enemy.health -= 334;
-                }
-            }
+    if let Some(player) = player.iter().next() {
+        if player.health <= 0 {
+            return;
         }
-    } else if mouse_button_input.just_pressed(MouseButton::Left) {
-        enemy_spawn_timer.0.unpause();
-        for (cam_transform, (weapon_transform, mut weapon)) in
-            player_cams.iter().zip(player_weapon.iter_mut())
-        {
-            if time.time_since_startup().as_secs_f32() - weapon.last_shot < weapon.fire_rate {
-                return;
-            } else {
-                weapon.last_shot = time.time_since_startup().as_secs_f32();
-            };
+        if mouse_button_input.pressed(MouseButton::Right) {
+            enemy_spawn_timer.0.unpause();
+            for (cam_transform, (weapon_transform, mut weapon)) in
+                player_cams.iter().zip(player_weapon.iter_mut())
+            {
+                if time.time_since_startup().as_secs_f32() - weapon.secondary_fire_last_shot
+                    < weapon.secondary_fire_rate
+                {
+                    return;
+                } else {
+                    weapon.secondary_fire_last_shot = time.time_since_startup().as_secs_f32();
+                };
 
-            let pitch = state.pitch;
-            let yaw = -state.yaw;
-            let xz = f32::cos(pitch);
-            let looking_dir = -Vec3::new(-xz * f32::sin(yaw), -f32::sin(pitch), xz * f32::cos(yaw));
-            player_events.send(PlayerEvent::Fire { alt: false });
+                let pitch = state.pitch;
+                let yaw = -state.yaw;
+                let xz = f32::cos(pitch);
+                let looking_dir =
+                    -Vec3::new(-xz * f32::sin(yaw), -f32::sin(pitch), xz * f32::cos(yaw));
+                player_events.send(PlayerEvent::Fire { alt: true });
 
-            for (polyline, mut visibility, material, mut timer) in polylines_query.iter_mut() {
-                if let Some(polyline) = polylines.get_mut(&*polyline) {
-                    polyline.vertices[0] =
-                        weapon_transform.translation + weapon_transform.forward() * 0.6;
-                    polyline.vertices[1] =
-                        weapon_transform.translation + weapon_transform.forward() * 100.0;
+                for (polyline, mut visibility, material, mut timer) in
+                    secondary_polylines_query.iter_mut()
+                {
+                    if let Some(polyline) = polylines.get_mut(&*polyline) {
+                        polyline.vertices[0] =
+                            weapon_transform.translation + weapon_transform.forward() * 0.6;
+                        polyline.vertices[1] =
+                            weapon_transform.translation + weapon_transform.forward() * 100.0;
+                    }
+                    if let Some(material) = polyline_materials.get_mut(material) {
+                        material.color.set_a(1.0);
+                    }
+                    visibility.is_visible = true;
+                    timer.reset();
                 }
-                if let Some(material) = polyline_materials.get_mut(material) {
-                    material.color.set_a(1.0);
+
+                if let Some(collision) = physics_world.ray_cast_with_filter(
+                    cam_transform.translation,
+                    looking_dir * 100.0,
+                    true,
+                    CollisionLayers::none()
+                        .with_group(Layer::Raycast)
+                        .with_masks([Layer::World, Layer::Enemy]),
+                    |_| true,
+                ) {
+                    // TODO move to be triggered by event
+                    if let Ok(mut enemy) = enemies.get_mut(collision.entity) {
+                        enemy.health -= 334;
+                    }
                 }
-                visibility.is_visible = true;
-                timer.reset();
             }
+        } else if mouse_button_input.just_pressed(MouseButton::Left) {
+            enemy_spawn_timer.0.unpause();
+            for (cam_transform, (weapon_transform, mut weapon)) in
+                player_cams.iter().zip(player_weapon.iter_mut())
+            {
+                if time.time_since_startup().as_secs_f32() - weapon.last_shot < weapon.fire_rate {
+                    return;
+                } else {
+                    weapon.last_shot = time.time_since_startup().as_secs_f32();
+                };
 
-            if let Some(collision) = physics_world.ray_cast_with_filter(
-                cam_transform.translation,
-                looking_dir * 200.0,
-                true,
-                CollisionLayers::none()
-                    .with_group(Layer::Raycast)
-                    .with_masks([Layer::World, Layer::Enemy]),
-                |_| true,
-            ) {
-                // TODO move to be triggered by event
-                if let Ok(mut enemy) = enemies.get_mut(collision.entity) {
-                    enemy.health -= 1001;
+                let pitch = state.pitch;
+                let yaw = -state.yaw;
+                let xz = f32::cos(pitch);
+                let looking_dir =
+                    -Vec3::new(-xz * f32::sin(yaw), -f32::sin(pitch), xz * f32::cos(yaw));
+                player_events.send(PlayerEvent::Fire { alt: false });
+
+                for (polyline, mut visibility, material, mut timer) in polylines_query.iter_mut() {
+                    if let Some(polyline) = polylines.get_mut(&*polyline) {
+                        polyline.vertices[0] =
+                            weapon_transform.translation + weapon_transform.forward() * 0.6;
+                        polyline.vertices[1] =
+                            weapon_transform.translation + weapon_transform.forward() * 100.0;
+                    }
+                    if let Some(material) = polyline_materials.get_mut(material) {
+                        material.color.set_a(1.0);
+                    }
+                    visibility.is_visible = true;
+                    timer.reset();
+                }
+
+                if let Some(collision) = physics_world.ray_cast_with_filter(
+                    cam_transform.translation,
+                    looking_dir * 200.0,
+                    true,
+                    CollisionLayers::none()
+                        .with_group(Layer::Raycast)
+                        .with_masks([Layer::World, Layer::Enemy]),
+                    |_| true,
+                ) {
+                    // TODO move to be triggered by event
+                    if let Ok(mut enemy) = enemies.get_mut(collision.entity) {
+                        enemy.health -= 1001;
+                    }
                 }
             }
         }

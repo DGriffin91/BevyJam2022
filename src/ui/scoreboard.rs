@@ -87,7 +87,6 @@ fn handle_scoreboard_event(
                 }
                 ScoreboardEvent::Kill => {
                     scoreboard.kills += 1;
-                    dbg!(scoreboard.kills);
                 }
                 ScoreboardEvent::_Miss => {
                     scoreboard.misses += 1;

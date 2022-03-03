@@ -3,16 +3,25 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_tweening::{Animator, EaseFunction, Lens, Tween, TweeningType};
 
-use crate::{assets::GameState, player::Player};
+use crate::{
+    assets::{FontAssets, GameState},
+    player::Player,
+};
 
 pub struct HudPlugin;
 
 impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_health_bar))
-            .add_system_set(
-                SystemSet::on_update(GameState::Playing).with_system(update_health_bar),
-            );
+        app.add_system_set(
+            SystemSet::on_enter(GameState::Playing)
+                .with_system(setup_health_bar)
+                .with_system(setup_fail_message),
+        )
+        .add_system_set(
+            SystemSet::on_update(GameState::Playing)
+                .with_system(update_health_bar)
+                .with_system(update_fail_message),
+        );
     }
 }
 
@@ -93,6 +102,70 @@ fn update_health_bar(
                         end: health_percent * 100.0,
                     },
                 ));
+            }
+        }
+    }
+}
+
+#[derive(Component)]
+struct FailMessage;
+
+fn setup_fail_message(mut commands: Commands, font_assets: Res<FontAssets>) {
+    commands
+        .spawn_bundle(TextBundle {
+            text: Text {
+                sections: vec![TextSection {
+                    value: "".to_string(),
+                    style: TextStyle {
+                        font: font_assets.fira_mono_medium.clone(),
+                        font_size: 48.0,
+                        color: Color::rgba(0.0, 0.0, 0.0, 1.0),
+                    },
+                }],
+                // TODO tried to align center, gave up for now
+                //alignment: TextAlignment {
+                //    vertical: VerticalAlign::Center,
+                //    horizontal: HorizontalAlign::Center,
+                //},
+                ..Default::default()
+            },
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Percent(10.0),
+                    left: Val::Percent(10.0),
+                    ..Default::default()
+                },
+                //align_content: AlignContent::Center,
+                //align_items: AlignItems::Center,
+                //align_self: AlignSelf::Center,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(FailMessage);
+}
+
+fn update_fail_message(
+    players: Query<&Player, Changed<Player>>,
+    mut fail_messages: Query<&mut Text, With<FailMessage>>,
+) {
+    for Player {
+        health,
+        max_health: _,
+    } in players.iter()
+    {
+        if health <= &0 {
+            for mut text in fail_messages.iter_mut() {
+                text.sections[0].value = "You have failed to achieve victory.".into();
+            }
+        } else {
+            // TODO JAAAAAAANKY game jam
+            // just to avoid the allocation of setting it every time
+            for mut text in fail_messages.iter_mut() {
+                if text.sections[0].value == "You have failed to achieve victory." {
+                    text.sections[0].value = "You have failed to achieve victory.".into();
+                }
             }
         }
     }
