@@ -166,7 +166,7 @@ impl Default for PlayerBundle {
         PlayerBundle {
             player: Player::default(),
             footsteps: Footsteps::default(),
-            transform: Transform::from_xyz(0.0, 3.0, 0.0),
+            transform: Transform::from_xyz(0.0, 3.0, 100.0),
             global_tranform: GlobalTransform::default(),
             rigid_body: RigidBody::Dynamic,
             collision_layers: CollisionLayers::none()

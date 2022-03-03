@@ -114,7 +114,7 @@ fn menu_ui(
     mut level_asset_query: Query<&mut LevelAsset>,
     mut movement_settings: ResMut<MovementSettings>,
     keys: Res<Input<KeyCode>>,
-    mut players: Query<&mut Player>,
+    mut players: Query<(&mut Player, &mut Transform)>,
     enemies: Query<Entity, With<Enemy>>,
     mut enemies_state: ResMut<EnemiesState>,
     mut scoreboard_events: EventWriter<ScoreboardEvent>,
@@ -132,8 +132,9 @@ fn menu_ui(
                 }
                 if ui.button("Restart").clicked() {
                     // TODO move elsewhere, trigger with event
-                    if let Some(mut player) = players.iter_mut().next() {
+                    if let Some((mut player, mut trans)) = players.iter_mut().next() {
                         player.health = player.max_health;
+                        *trans = Transform::from_xyz(0.0, 3.0, 100.0);
                     }
                     for entity in enemies.iter() {
                         commands.entity(entity).despawn_recursive();
