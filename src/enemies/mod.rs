@@ -15,7 +15,7 @@ use crate::{
         AudioAssets, GameState, ModelAssets,
     },
     player::{Player, PlayerEvent},
-    ui::scoreboard::ScoreboardEvent,
+    ui::{menu::GamePreferences, scoreboard::ScoreboardEvent},
     world::LevelAsset,
 };
 
@@ -427,6 +427,7 @@ fn kill_enemy(
     audio: Res<Audio>,
     audio_assets: Res<AudioAssets>,
     mut scoreboard_events: EventWriter<ScoreboardEvent>,
+    preferences: Res<GamePreferences>,
 ) {
     for (entity, enemy_transform, enemy, rb) in enemies.iter_mut() {
         if enemy.health > 0 {
@@ -475,8 +476,10 @@ fn kill_enemy(
             });
 
         commands.entity(entity).remove::<Alive>();
+
+        let time_till_despawn = if preferences.potato { 2.0 } else { 12.0 };
         commands.entity(entity).insert(Dead {
-            time_to_despawn: time.seconds_since_startup() as f32 + 10.0,
+            time_to_despawn: time.seconds_since_startup() as f32 + time_till_despawn,
         });
         // TODO use event
         audio.play(audio_assets.get_unit2_explosion().clone());

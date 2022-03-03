@@ -27,7 +27,7 @@ use crate::{
         orb_material::update_orb_material_time,
         GameState, ImageAssets,
     },
-    enemies::{Waypoint, Waypoints},
+    enemies::Waypoints,
     ui::menu::GamePreferences,
     Layer,
 };
@@ -53,35 +53,38 @@ fn spawn_demo_cubes(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    preferences: Res<GamePreferences>,
 ) {
-    let mesh = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-    let material = materials.add(StandardMaterial {
-        base_color: Color::PINK,
-        ..Default::default()
-    });
+    if !preferences.potato {
+        let mesh = meshes.add(Mesh::from(shape::Cube { size: 3.0 }));
+        let material = materials.add(StandardMaterial {
+            base_color: Color::DARK_GRAY,
+            ..Default::default()
+        });
 
-    for i in 0..10 {
-        commands
-            .spawn_bundle(PbrBundle {
-                mesh: mesh.clone(),
-                material: material.clone(),
-                transform: Transform::from_xyz(0.0, i as f32 * 6.0 + 5.0, -50.0),
-                ..Default::default()
-            })
-            .insert(RigidBody::Dynamic)
-            .insert(CollisionShape::Cuboid {
-                half_extends: Vec3::new(0.5, 0.5, 0.5),
-                border_radius: None,
-            })
-            .insert(PhysicMaterial {
-                restitution: 0.7,
-                ..Default::default()
-            })
-            .insert(
-                CollisionLayers::none()
-                    .with_group(Layer::World)
-                    .with_masks(Layer::all()),
-            );
+        for i in 0..10 {
+            commands
+                .spawn_bundle(PbrBundle {
+                    mesh: mesh.clone(),
+                    material: material.clone(),
+                    transform: Transform::from_xyz(0.0, i as f32 * 6.0 + 5.0, -50.0),
+                    ..Default::default()
+                })
+                .insert(RigidBody::Dynamic)
+                .insert(CollisionShape::Cuboid {
+                    half_extends: Vec3::new(1.5, 1.5, 1.5),
+                    border_radius: None,
+                })
+                .insert(PhysicMaterial {
+                    restitution: 0.7,
+                    ..Default::default()
+                })
+                .insert(
+                    CollisionLayers::none()
+                        .with_group(Layer::World)
+                        .with_masks(Layer::all()),
+                );
+        }
     }
 }
 
@@ -377,9 +380,9 @@ fn setup_level_one(
 }
 
 fn spawn_waypoints(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    //mut commands: Commands,
+    //mut meshes: ResMut<Assets<Mesh>>,
+    //mut materials: ResMut<Assets<StandardMaterial>>,
     mut waypoints: ResMut<Waypoints>,
 ) {
     //--- WAYPOINTS ---
@@ -475,7 +478,7 @@ fn spawn_waypoints(
         Vec3::new(43.9461, 36.4119, -379.572),
         Vec3::new(-42.9969, 36.4119, -379.358),
     ];
-
+    /*
     let mesh = meshes.add(Mesh::from(shape::UVSphere {
         radius: 0.5,
         sectors: 8,
@@ -525,5 +528,5 @@ fn spawn_waypoints(
                 ..Default::default()
             })
             .insert(Waypoint);
-    }
+    }*/
 }

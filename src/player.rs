@@ -35,7 +35,7 @@ impl Plugin for PlayerPlugin {
                     .with_system(update_player_polylines)
                     .with_system(update_secondary_player_polylines)
                     .with_system(cursor_grab)
-                    .with_system(player_change_speed)
+                    //.with_system(player_change_speed)
                     .with_system(footsteps),
             );
     }
@@ -661,6 +661,7 @@ fn update_secondary_player_polylines(
     }
 }
 
+#[allow(dead_code)]
 fn player_change_speed(
     mut settings: ResMut<MovementSettings>,
     windows: Res<Windows>,
