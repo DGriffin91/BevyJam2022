@@ -190,6 +190,50 @@ pub struct AudioAssets {
     pub lasergun_alt06: Handle<AudioSource>,
     #[asset(path = "audio/weapons/lasergun_alt/lasergun07.ogg")]
     pub lasergun_alt07: Handle<AudioSource>,
+
+    // Explosions
+    #[asset(path = "audio/explosions/unit2/unit2_explode-001.ogg")]
+    pub unit2_explode01: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_explode-002.ogg")]
+    pub unit2_explode02: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_explode-003.ogg")]
+    pub unit2_explode03: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_explode-004.ogg")]
+    pub unit2_explode04: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_explode-005.ogg")]
+    pub unit2_explode05: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_explode-006.ogg")]
+    pub unit2_explode06: Handle<AudioSource>,
+
+    #[asset(path = "audio/explosions/unit2/unit2_fire-001.ogg")]
+    pub unit2_fire01: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_fire-002.ogg")]
+    pub unit2_fire02: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_fire-003.ogg")]
+    pub unit2_fire03: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_fire-004.ogg")]
+    pub unit2_fire04: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_fire-005.ogg")]
+    pub unit2_fire05: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_fire-006.ogg")]
+    pub unit2_fire06: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_fire-007.ogg")]
+    pub unit2_fire07: Handle<AudioSource>,
+
+    #[asset(path = "audio/explosions/unit2/unit2_projectile_collide-001.ogg")]
+    pub unit2_projectile_collide01: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_projectile_collide-002.ogg")]
+    pub unit2_projectile_collide02: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_projectile_collide-003.ogg")]
+    pub unit2_projectile_collide03: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_projectile_collide-004.ogg")]
+    pub unit2_projectile_collide04: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_projectile_collide-005.ogg")]
+    pub unit2_projectile_collide05: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_projectile_collide-006.ogg")]
+    pub unit2_projectile_collide06: Handle<AudioSource>,
+    #[asset(path = "audio/explosions/unit2/unit2_projectile_collide-007.ogg")]
+    pub unit2_projectile_collide07: Handle<AudioSource>,
 }
 
 impl AudioAssets {
@@ -245,6 +289,44 @@ impl AudioAssets {
             &self.lasergun_alt05,
             &self.lasergun_alt06,
             &self.lasergun_alt07,
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap()
+    }
+    pub fn get_unit2_explosion(&self) -> &Handle<AudioSource> {
+        [
+            &self.unit2_explode01,
+            &self.unit2_explode02,
+            &self.unit2_explode03,
+            &self.unit2_explode04,
+            &self.unit2_explode05,
+            &self.unit2_explode06,
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap()
+    }
+    pub fn get_unit2_fire(&self) -> &Handle<AudioSource> {
+        [
+            &self.unit2_fire01,
+            &self.unit2_fire02,
+            &self.unit2_fire03,
+            &self.unit2_fire04,
+            &self.unit2_fire05,
+            &self.unit2_fire06,
+            &self.unit2_fire07,
+        ]
+        .choose(&mut rand::thread_rng())
+        .unwrap()
+    }
+    pub fn get_unit2_projectile_collide(&self) -> &Handle<AudioSource> {
+        [
+            &self.unit2_projectile_collide01,
+            &self.unit2_projectile_collide02,
+            &self.unit2_projectile_collide03,
+            &self.unit2_projectile_collide04,
+            &self.unit2_projectile_collide05,
+            &self.unit2_projectile_collide06,
+            &self.unit2_projectile_collide07,
         ]
         .choose(&mut rand::thread_rng())
         .unwrap()

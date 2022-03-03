@@ -6,9 +6,12 @@ use heron::{
 };
 
 use crate::{
+    assets::AudioAssets,
     player::{Player, PlayerEvent},
     Layer,
 };
+
+use bevy_kira_audio::Audio;
 
 #[derive(Bundle)]
 pub struct BulletBundle {
@@ -69,6 +72,8 @@ pub fn handle_bullet_collisions(
     mut players: Query<(Entity, &Transform, &mut Player)>,
     mut player_events: EventWriter<PlayerEvent>,
     bullets: Query<(&Transform, &Bullet)>,
+    audio: Res<Audio>,
+    audio_assets: Res<AudioAssets>,
 ) {
     for collision in collision_events.iter() {
         match collision {
@@ -80,6 +85,9 @@ pub fn handle_bullet_collisions(
                 } else {
                     continue;
                 };
+
+                // TODO use event
+                audio.play(audio_assets.get_unit2_projectile_collide().clone());
 
                 let (bullet_ent, other_ent) =
                     (bullet.rigid_body_entity(), other.rigid_body_entity());

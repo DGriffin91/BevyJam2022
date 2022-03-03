@@ -327,7 +327,7 @@ fn setup_level_one(
     }
     if preferences.dynamic_shadows {
         //Bevy Sun
-        let size: f32 = 100.0;
+        let size: f32 = 120.0;
         let sun_rot_x = -67.0f32;
         let sun_rot_y = 22.0f32;
         //8.0f32;

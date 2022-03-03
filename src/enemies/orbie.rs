@@ -22,7 +22,7 @@ impl EnemyBehaviour for OrbieEnemy {
                 density: 1.0, // Value must be greater than 0.0
                 ..Default::default()
             })
-            .insert(EnemyLastFired(Timer::from_seconds(0.8, true)))
+            .insert(EnemyLastFired(Timer::from_seconds(0.9, true)))
             .insert(Enemy::default())
             .insert(OrbieEnemy)
             .insert(Alive)

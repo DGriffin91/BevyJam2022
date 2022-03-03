@@ -12,7 +12,7 @@ use splines::{Interpolation, Spline};
 use crate::{
     assets::{
         orb_material::{OrbMaterial, OrbProperties},
-        GameState, ModelAssets,
+        AudioAssets, GameState, ModelAssets,
     },
     player::{Player, PlayerEvent},
     world::LevelAsset,
@@ -22,6 +22,8 @@ use self::{
     bullet::{disable_gravity_for_bullets, handle_bullet_collisions, BulletBundle},
     orbie::OrbieEnemy,
 };
+
+use bevy_kira_audio::Audio;
 
 mod bullet;
 mod orbie;
@@ -70,7 +72,7 @@ impl Plugin for EnemiesPlugin {
 struct EnemiesState {
     pub enemies_killed: u32,
     pub current_level: usize,
-    pub levels: [LevelParams; 10],
+    pub levels: [LevelParams; 14],
     pub destinations: [usize; 3], //Typically, the 3 points closest to the player
     pub last_time_player_took_damage: f32,
 }
@@ -97,16 +99,20 @@ impl Default for EnemiesState {
             enemies_killed: 0,
             current_level: 0,
             levels: [
-                LevelParams::new(8, 6, 1.0),
-                LevelParams::new(16, 7, 1.0),
-                LevelParams::new(24, 8, 1.0),
-                LevelParams::new(32, 9, 1.0),
-                LevelParams::new(64, 10, 1.0),
-                LevelParams::new(96, 11, 1.1),
-                LevelParams::new(128, 12, 1.2),
-                LevelParams::new(192, 12, 1.3),
-                LevelParams::new(256, 12, 1.4),
-                LevelParams::new(384, 12, 1.5),
+                LevelParams::new(20, 6, 1.0),
+                LevelParams::new(40, 7, 1.0),
+                LevelParams::new(60, 8, 1.0),
+                LevelParams::new(80, 9, 1.0),
+                LevelParams::new(110, 10, 1.0),
+                LevelParams::new(130, 11, 1.1),
+                LevelParams::new(160, 12, 1.2),
+                LevelParams::new(200, 12, 1.3),
+                LevelParams::new(250, 12, 1.4),
+                LevelParams::new(300, 12, 1.5),
+                LevelParams::new(350, 12, 1.52),
+                LevelParams::new(400, 12, 1.54),
+                LevelParams::new(450, 13, 1.56),
+                LevelParams::new(500, 14, 1.58),
             ],
             destinations: [0, 1, 2],
             last_time_player_took_damage: 0.0,
@@ -417,6 +423,8 @@ fn kill_enemy(
     mut enemies_state: ResMut<EnemiesState>,
     mut orb_materials: ResMut<Assets<OrbMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    audio: Res<Audio>,
+    audio_assets: Res<AudioAssets>,
 ) {
     for (entity, enemy_transform, enemy, rb) in enemies.iter_mut() {
         if enemy.health > 0 {
@@ -468,6 +476,8 @@ fn kill_enemy(
         commands.entity(entity).insert(Dead {
             time_to_despawn: time.seconds_since_startup() as f32 + 10.0,
         });
+        // TODO use event
+        audio.play(audio_assets.get_unit2_explosion().clone());
         // ENEMY KILLED - TODO show kills on screen
         enemies_state.enemies_killed += 1;
         // LEVEL UP - TODO show level on screen
@@ -509,6 +519,8 @@ fn enemies_fire_at_player(
     mut orb_materials: ResMut<Assets<OrbMaterial>>,
     enemies_state: Res<EnemiesState>,
     mut meshes: ResMut<Assets<Mesh>>,
+    audio: Res<Audio>,
+    audio_assets: Res<AudioAssets>,
 ) {
     for (transform, mut enemy_last_fired, enemy) in enemies.iter_mut() {
         enemy_last_fired.0.tick(time.delta());
@@ -553,6 +565,8 @@ fn enemies_fire_at_player(
                             handle: orb_material,
                         });
                 });
+            // TODO use event
+            audio.play(audio_assets.get_unit2_fire().clone());
         }
     }
 }
