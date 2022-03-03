@@ -29,7 +29,7 @@ pub enum ScoreboardEvent {
     LevelUp,
     _Hit,
     _Miss,
-    _Reset,
+    Reset,
 }
 
 #[derive(Component, Default)]
@@ -91,7 +91,7 @@ fn handle_scoreboard_event(
                 ScoreboardEvent::_Miss => {
                     scoreboard.misses += 1;
                 }
-                ScoreboardEvent::_Reset => {
+                ScoreboardEvent::Reset => {
                     scoreboard.hits = 0;
                     scoreboard.misses = 0;
                     scoreboard.kills = 0;

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_asset_loader::AssetKeys;
 use bevy_egui::{
-    egui::{self, Align2, FontDefinitions},
+    egui::{self, Align2, FontDefinitions, Pos2},
     EguiContext,
 };
 
@@ -10,9 +10,12 @@ use crate::{
         custom_material::CustomMaterial, light_shaft_material::LightShaftMaterial,
         orb_material::OrbMaterial, GameState,
     },
-    player::MovementSettings,
+    enemies::{EnemiesState, Enemy, EnemySpawnTimer},
+    player::{MovementSettings, Player},
     world::{level1, LevelAsset},
 };
+
+use super::{hud::ScreenMessage, scoreboard::ScoreboardEvent};
 
 pub struct MenuPlugin;
 
@@ -102,6 +105,7 @@ fn startup_menu(
 }
 
 fn menu_ui(
+    mut commands: Commands,
     mut windows: ResMut<Windows>,
     mut egui_context: ResMut<EguiContext>,
     mut custom_materials: ResMut<Assets<CustomMaterial>>,
@@ -110,16 +114,39 @@ fn menu_ui(
     mut level_asset_query: Query<&mut LevelAsset>,
     mut movement_settings: ResMut<MovementSettings>,
     keys: Res<Input<KeyCode>>,
+    mut players: Query<&mut Player>,
+    enemies: Query<Entity, With<Enemy>>,
+    mut enemies_state: ResMut<EnemiesState>,
+    mut scoreboard_events: EventWriter<ScoreboardEvent>,
+    mut enemy_spawn_timer: ResMut<EnemySpawnTimer>,
+    mut screen_messages: Query<&mut ScreenMessage>,
 ) {
     let window = windows.get_primary_mut().unwrap();
     if window.is_focused() && !window.cursor_locked() {
-        egui::Window::new("Preferences").show(egui_context.ctx_mut(), |ui| {
-            if ui.button("Continue").clicked() {
-                window.set_cursor_lock_mode(true);
-                window.set_cursor_visibility(false);
-            }
-            movement_settings.build_ui(ui, keys);
-        });
+        egui::Window::new("Preferences")
+            .default_pos(Pos2::new(10.0, 200.0))
+            .show(egui_context.ctx_mut(), |ui| {
+                if ui.button("Continue").clicked() {
+                    window.set_cursor_lock_mode(true);
+                    window.set_cursor_visibility(false);
+                }
+                if ui.button("Restart").clicked() {
+                    // TODO move elsewhere, trigger with event
+                    if let Some(mut player) = players.iter_mut().next() {
+                        player.health = player.max_health;
+                    }
+                    for entity in enemies.iter() {
+                        commands.entity(entity).despawn_recursive();
+                    }
+                    scoreboard_events.send(ScoreboardEvent::Reset);
+                    *enemies_state = EnemiesState::default();
+                    enemy_spawn_timer.0.pause();
+                    for mut screen_message in screen_messages.iter_mut() {
+                        *screen_message = ScreenMessage::PressFire;
+                    }
+                }
+                movement_settings.build_ui(ui, keys);
+            });
 
         #[cfg(debug_assertions)]
         egui::Window::new("environment materials").show(egui_context.ctx_mut(), |ui| {

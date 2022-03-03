@@ -20,7 +20,8 @@ impl Plugin for HudPlugin {
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
                 .with_system(update_health_bar)
-                .with_system(update_fail_message),
+                .with_system(update_fail_message)
+                .with_system(update_message),
         );
     }
 }
@@ -107,15 +108,19 @@ fn update_health_bar(
     }
 }
 
-#[derive(Component)]
-struct FailMessage;
+#[derive(Component, PartialEq)]
+pub enum ScreenMessage {
+    Empty,
+    Failed,
+    PressFire,
+}
 
 fn setup_fail_message(mut commands: Commands, font_assets: Res<FontAssets>) {
     commands
         .spawn_bundle(TextBundle {
             text: Text {
                 sections: vec![TextSection {
-                    value: "".to_string(),
+                    value: "Fire to begin".to_string(),
                     style: TextStyle {
                         font: font_assets.fira_mono_medium.clone(),
                         font_size: 48.0,
@@ -143,30 +148,33 @@ fn setup_fail_message(mut commands: Commands, font_assets: Res<FontAssets>) {
             },
             ..Default::default()
         })
-        .insert(FailMessage);
+        .insert(ScreenMessage::PressFire);
 }
 
 fn update_fail_message(
     players: Query<&Player, Changed<Player>>,
-    mut fail_messages: Query<&mut Text, With<FailMessage>>,
+    mut screen_messages: Query<&mut ScreenMessage>,
 ) {
     for Player {
         health,
         max_health: _,
     } in players.iter()
     {
-        if health <= &0 {
-            for mut text in fail_messages.iter_mut() {
-                text.sections[0].value = "You have failed to achieve victory.".into();
-            }
-        } else {
-            // TODO JAAAAAAANKY game jam
-            // just to avoid the allocation of setting it every time
-            for mut text in fail_messages.iter_mut() {
-                if text.sections[0].value == "You have failed to achieve victory." {
-                    text.sections[0].value = "You have failed to achieve victory.".into();
-                }
+        for mut screen_message in screen_messages.iter_mut() {
+            if health <= &0 {
+                *screen_message = ScreenMessage::Failed;
             }
         }
+    }
+}
+
+fn update_message(mut screen_messages: Query<(&mut Text, &ScreenMessage), Changed<ScreenMessage>>) {
+    for (mut text, screen_message) in screen_messages.iter_mut() {
+        text.sections[0].value = match *screen_message {
+            ScreenMessage::Empty => "",
+            ScreenMessage::Failed => "You have failed to achieve victory.\nPress Tab to open menu",
+            ScreenMessage::PressFire => "Press fire to begin",
+        }
+        .into();
     }
 }

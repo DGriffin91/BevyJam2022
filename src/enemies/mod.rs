@@ -70,7 +70,7 @@ impl Plugin for EnemiesPlugin {
     }
 }
 
-struct EnemiesState {
+pub struct EnemiesState {
     pub enemies_killed: u32,
     pub current_level: usize,
     pub levels: [LevelParams; 14],
@@ -78,7 +78,7 @@ struct EnemiesState {
     pub last_time_player_took_damage: f32,
 }
 
-struct LevelParams {
+pub struct LevelParams {
     kills_to_level_up: usize,
     max_enemies: usize,
     damage_multiplier: f32,

@@ -14,6 +14,7 @@ use heron::{CollisionLayers, CollisionShape, PhysicMaterial, RigidBody, Rotation
 use crate::assets::custom_material::slider;
 use crate::assets::{AudioAssets, GameState, ModelAssets};
 use crate::enemies::{Enemy, EnemySpawnTimer};
+use crate::ui::hud::ScreenMessage;
 use crate::Layer;
 
 /// Contains everything needed to add first-person fly camera behavior to your game
@@ -457,6 +458,7 @@ fn player_fire(
     mut enemies: Query<&mut Enemy>,
     mut enemy_spawn_timer: ResMut<EnemySpawnTimer>,
     player: Query<&Player>,
+    mut screen_messages: Query<&mut ScreenMessage>,
 ) {
     let window = windows.get_primary().unwrap();
     if !window.is_focused() || !window.cursor_locked() {
@@ -467,6 +469,11 @@ fn player_fire(
             return;
         }
         if mouse_button_input.pressed(MouseButton::Right) {
+            for mut screen_message in screen_messages.iter_mut() {
+                if *screen_message != ScreenMessage::Empty {
+                    *screen_message = ScreenMessage::Empty;
+                }
+            }
             enemy_spawn_timer.0.unpause();
             for (cam_transform, (weapon_transform, mut weapon)) in
                 player_cams.iter().zip(player_weapon.iter_mut())
@@ -518,6 +525,11 @@ fn player_fire(
                 }
             }
         } else if mouse_button_input.just_pressed(MouseButton::Left) {
+            for mut screen_message in screen_messages.iter_mut() {
+                if *screen_message != ScreenMessage::Empty {
+                    *screen_message = ScreenMessage::Empty;
+                }
+            }
             enemy_spawn_timer.0.unpause();
             for (cam_transform, (weapon_transform, mut weapon)) in
                 player_cams.iter().zip(player_weapon.iter_mut())
