@@ -179,7 +179,7 @@ impl Default for PlayerBundle {
             physic_material: PhysicMaterial {
                 restitution: 0.1,
                 density: 10.0,
-                friction: 0.0,
+                friction: 0.5,
             },
         }
     }

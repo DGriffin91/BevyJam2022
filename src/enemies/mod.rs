@@ -14,7 +14,7 @@ use crate::{
         orb_material::{OrbMaterial, OrbProperties},
         GameState, ModelAssets,
     },
-    player::Player,
+    player::{Player, PlayerEvent},
     world::LevelAsset,
 };
 
@@ -61,7 +61,8 @@ impl Plugin for EnemiesPlugin {
                     .with_system(enemies_move_to_destination)
                     .with_system(kill_enemy)
                     .with_system(progress_explosions)
-                    .with_system(clean_up_dead),
+                    .with_system(clean_up_dead)
+                    .with_system(player_takes_damage),
             );
     }
 }
@@ -71,6 +72,7 @@ struct EnemiesState {
     pub current_level: usize,
     pub levels: [LevelParams; 10],
     pub destinations: [usize; 3], //Typically, the 3 points closest to the player
+    pub last_time_player_took_damage: f32,
 }
 
 struct LevelParams {
@@ -107,6 +109,7 @@ impl Default for EnemiesState {
                 LevelParams::new(384, 12, 1.5),
             ],
             destinations: [0, 1, 2],
+            last_time_player_took_damage: 0.0,
         }
     }
 }
@@ -137,10 +140,16 @@ fn update_destinations(
             distances.push((player_transform.translation.distance(*loc), i));
         }
         distances.sort_by(|a, b| (a.0).partial_cmp(&b.0).unwrap());
-        //TODO: do pick the closest one if we haven't hit the player in a while
-        enemies_state.destinations[0] = distances[5].1; //Don't pick the closest one
-        enemies_state.destinations[1] = distances[6].1;
-        enemies_state.destinations[2] = distances[7].1;
+        if time.seconds_since_startup() as f32 - enemies_state.last_time_player_took_damage > 10.0 {
+            //Pick the closest waypoints if we haven't hit the player in a while
+            enemies_state.destinations[0] = distances[0].1;
+            enemies_state.destinations[1] = distances[1].1;
+            enemies_state.destinations[2] = distances[2].1;
+        } else {
+            enemies_state.destinations[0] = distances[5].1; //Don't pick the closest one
+            enemies_state.destinations[1] = distances[6].1;
+            enemies_state.destinations[2] = distances[7].1;
+        }
     }
 }
 
@@ -372,11 +381,13 @@ fn enemies_move_to_destination(
                 waypoints.inside[enemy.current_destination] + enemy.current_random_offset;
 
             let dist = enemy_transform.translation.distance(destination);
-
+            let mut move_speed = enemy.move_speed;
+            if dist > 100.0 {
+                // enemies move faster if they have to go far.
+                move_speed *= 3.0;
+            }
             let mut move_trans = enemy_transform.looking_at(destination, Vec3::Y).forward()
-                * (enemy.move_speed * (dist - 2.0))
-                    .min(enemy.move_speed)
-                    .max(0.0);
+                * (move_speed * (dist - 2.0)).min(move_speed).max(0.0);
 
             move_trans =
                 Vec3::new(body.linvel().x, body.linvel().y, body.linvel().z).lerp(move_trans, 0.04);
@@ -449,7 +460,7 @@ fn kill_enemy(
             .insert(Explosion {
                 progress: 0.0,
                 speed: 3.0,
-                scale: 0.032,
+                scale: 0.033,
                 handle: orb_material,
             });
 
@@ -578,6 +589,18 @@ fn progress_explosions(
             if let Some(mat) = orb_materials.get_mut(explosion.handle.clone()) {
                 mat.material_properties.alpha = 1.0 - explosion.progress;
             }
+        }
+    }
+}
+
+fn player_takes_damage(
+    time: Res<Time>,
+    mut player_events: EventReader<PlayerEvent>,
+    mut enemies_state: ResMut<EnemiesState>,
+) {
+    for player_event in player_events.iter() {
+        if let PlayerEvent::Hit = player_event {
+            enemies_state.last_time_player_took_damage = time.seconds_since_startup() as f32;
         }
     }
 }
