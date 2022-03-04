@@ -41,7 +41,7 @@ impl Plugin for LevelOnePlugin {
         app.add_system_set(
             SystemSet::on_enter(GameState::Playing)
                 .with_system(setup_level_one)
-                .with_system(spawn_demo_cubes)
+                //.with_system(spawn_demo_cubes)
                 .with_system(spawn_waypoints),
         )
         .add_system(update_light_shaft_material_time)
@@ -49,6 +49,7 @@ impl Plugin for LevelOnePlugin {
     }
 }
 
+#[allow(dead_code)]
 fn spawn_demo_cubes(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
