@@ -11,7 +11,7 @@ use crate::{
     Layer,
 };
 
-use super::{Alive, Dead, Enemy, EnemyBehaviour, EnemyLastFired};
+use super::{Alive, Dead, EnemiesState, Enemy, EnemyBehaviour, EnemyLastFired};
 
 #[derive(Component, Default)]
 pub struct LaserieEnemy;
@@ -65,6 +65,7 @@ pub fn laserie_enemies_fire_at_player(
     physics_world: PhysicsWorld,
     spawned_polys: Query<&Handle<Polyline>>,
     mut player_events: EventWriter<PlayerEvent>,
+    enemies_state: Res<EnemiesState>,
 ) {
     if let Some(player) = players.iter().next() {
         if player.health <= 0.0 {
@@ -97,7 +98,9 @@ pub fn laserie_enemies_fire_at_player(
                 ) {
                     // TODO move to be triggered by event
                     if let Ok(mut player) = players.get_mut(collision.entity) {
-                        player.health -= enemy.weapon_damage * time.delta_seconds();
+                        player.health -= enemy.weapon_damage
+                            * time.delta_seconds()
+                            * enemies_state.get_level_params().damage_multiplier;
                         player_events.send(PlayerEvent::Hit { laser: true });
                     } else {
                         endpoint = Vec3::new(
@@ -125,7 +128,7 @@ pub fn laserie_enemies_fire_at_player(
 
 #[derive(Component)]
 pub struct HasLaser;
-
+//TODO make part of initially creating laserie
 pub fn add_lasers_to_laserie(
     mut commands: Commands,
     enemies: Query<

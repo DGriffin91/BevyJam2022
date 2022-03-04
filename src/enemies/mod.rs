@@ -1,11 +1,16 @@
 use std::{
     cmp::Ordering,
     hash::{Hash, Hasher},
+    time::Duration,
 };
 
 use bevy::prelude::*;
 
-use heron::rapier_plugin::{convert::IntoRapier, rapier3d::prelude::RigidBodySet, RigidBodyHandle};
+use bevy_polyline::{Polyline, PolylineBundle, PolylineMaterial};
+use heron::{
+    rapier_plugin::{convert::IntoRapier, rapier3d::prelude::RigidBodySet, RigidBodyHandle},
+    CollisionLayers, CollisionShape, PhysicMaterial, PhysicsLayer, RigidBody,
+};
 use pathfinding::directed::astar::astar;
 use rand::{prelude::SliceRandom, Rng};
 use splines::{Interpolation, Spline};
@@ -17,12 +22,14 @@ use crate::{
     },
     player::{Player, PlayerEvent},
     ui::{menu::GamePreferences, scoreboard::ScoreboardEvent},
+    Layer,
 };
 
 use self::{
     bullet::{disable_gravity_for_bullets, handle_bullet_collisions},
     laserie::{
-        add_lasers_to_laserie, laserie_enemies_fire_at_player, turn_off_dead_laser, LaserieEnemy,
+        add_lasers_to_laserie, laserie_enemies_fire_at_player, turn_off_dead_laser, HasLaser,
+        LaserieEnemy,
     },
     orbie::{orbie_enemies_fire_at_player, OrbieEnemy},
 };
@@ -48,6 +55,7 @@ impl Plugin for EnemiesPlugin {
         app.insert_resource(Waypoints::default())
             .insert_resource(EnemiesState::default())
             .insert_resource(EnemySpawnTimer({
+                //spawn_enemies_on_timer will set the duration back to 1 when the timer triggers
                 let mut timer = Timer::from_seconds(1.0, true);
                 timer.pause();
                 timer
@@ -72,7 +80,8 @@ impl Plugin for EnemiesPlugin {
                     .with_system(clean_up_dead)
                     .with_system(player_takes_damage)
                     .with_system(add_lasers_to_laserie)
-                    .with_system(turn_off_dead_laser),
+                    .with_system(turn_off_dead_laser)
+                    .with_system(handle_scoreboard_event),
             );
     }
 }
@@ -107,20 +116,20 @@ impl Default for EnemiesState {
             enemies_killed: 0,
             current_level: 0,
             levels: [
-                LevelParams::new(20, 4, 0.7),
-                LevelParams::new(40, 5, 0.8),
-                LevelParams::new(60, 6, 0.9),
-                LevelParams::new(80, 7, 1.0),
-                LevelParams::new(110, 8, 1.0),
-                LevelParams::new(130, 9, 1.1),
-                LevelParams::new(160, 10, 1.2),
-                LevelParams::new(200, 11, 1.3),
-                LevelParams::new(250, 12, 1.4),
-                LevelParams::new(300, 12, 1.5),
-                LevelParams::new(350, 12, 1.52),
-                LevelParams::new(400, 12, 1.54),
-                LevelParams::new(450, 13, 1.56),
-                LevelParams::new(500, 14, 1.58),
+                LevelParams::new(20, 4, 0.4),
+                LevelParams::new(40, 5, 0.5),
+                LevelParams::new(60, 6, 0.6),
+                LevelParams::new(80, 7, 0.7),
+                LevelParams::new(110, 8, 0.8),
+                LevelParams::new(130, 9, 0.9),
+                LevelParams::new(160, 10, 1.0),
+                LevelParams::new(200, 11, 1.1),
+                LevelParams::new(250, 12, 1.2),
+                LevelParams::new(300, 12, 1.3),
+                LevelParams::new(350, 12, 1.4),
+                LevelParams::new(400, 12, 1.5),
+                LevelParams::new(450, 13, 1.6),
+                LevelParams::new(500, 14, 1.7),
             ],
             destinations: [0, 1, 2],
             last_time_player_took_damage: 0.0,
@@ -154,7 +163,7 @@ fn update_destinations(
             distances.push((player_transform.translation.distance(*loc), i));
         }
         distances.sort_by(|a, b| (a.0).partial_cmp(&b.0).unwrap());
-        if time.seconds_since_startup() as f32 - enemies_state.last_time_player_took_damage > 10.0 {
+        if time.seconds_since_startup() as f32 - enemies_state.last_time_player_took_damage > 5.0 {
             //Pick the closest waypoints if we haven't hit the player in a while
             enemies_state.destinations[0] = distances[0].1;
             enemies_state.destinations[1] = distances[1].1;
@@ -181,6 +190,9 @@ fn spawn_enemies_on_timer(
     timer.0.tick(time.delta());
     if !timer.0.just_finished() {
         return;
+    }
+    if timer.0.duration().as_secs_f32() > 1.0 {
+        timer.0.set_duration(Duration::from_secs(1));
     }
     if enemies.iter().count() >= enemies_state.get_level_params().max_enemies {
         return;
@@ -330,6 +342,7 @@ pub struct Enemy {
     range: f32,
     current_destination: usize,
     current_random_offset: Vec3,
+    big: bool,
     update_destination_timer: Timer,
     move_speed: f32,
     weapon_damage: f32,
@@ -350,6 +363,7 @@ impl Default for Enemy {
             weapon_damage: 40.0,
             weapon_splash_radius: 8.0,
             rotate_lerp: 0.04,
+            big: false,
         }
     }
 }
@@ -385,9 +399,15 @@ fn enemies_update_current_destination(
             .unwrap();
 
         let mut rng = rand::thread_rng();
-        enemy.current_random_offset.x = rng.gen_range(-5.0f32..=5.0f32);
-        enemy.current_random_offset.y = rng.gen_range(-20.0f32..=0.0f32);
-        enemy.current_random_offset.z = rng.gen_range(-5.0f32..=5.0f32);
+        if enemy.big {
+            enemy.current_random_offset.x = 0.0;
+            enemy.current_random_offset.y = rng.gen_range(-10.0f32..=0.0f32);
+            enemy.current_random_offset.z = 0.0;
+        } else {
+            enemy.current_random_offset.x = rng.gen_range(-5.0f32..=5.0f32);
+            enemy.current_random_offset.y = rng.gen_range(-20.0f32..=0.0f32);
+            enemy.current_random_offset.z = rng.gen_range(-5.0f32..=5.0f32);
+        }
     }
 }
 
@@ -588,6 +608,111 @@ fn player_takes_damage(
     for player_event in player_events.iter() {
         if let PlayerEvent::Hit { laser: _laser } = player_event {
             enemies_state.last_time_player_took_damage = time.seconds_since_startup() as f32;
+        }
+    }
+}
+
+fn handle_scoreboard_event(
+    mut commands: Commands,
+    mut events: EventReader<ScoreboardEvent>,
+    model_assets: Res<ModelAssets>,
+    waypoints: Res<Waypoints>,
+    enemies_state: Res<EnemiesState>,
+    mut timer: ResMut<EnemySpawnTimer>,
+    mut polylines: ResMut<Assets<Polyline>>,
+    mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
+) {
+    for event in events.iter() {
+        if let ScoreboardEvent::LevelUp = event {
+            let spawn_point = waypoints.outfront.choose(&mut rand::thread_rng()).unwrap();
+            if enemies_state.current_level % 2 == 1 {
+                commands
+                    .spawn_bundle((
+                        Transform::from_xyz(spawn_point.x, spawn_point.y, spawn_point.z)
+                            .with_scale(Vec3::new(3.0, 3.0, 3.0)),
+                        GlobalTransform::default(),
+                    ))
+                    .insert(RigidBody::Dynamic)
+                    .insert(CollisionShape::Sphere { radius: 2.7 * 3.0 })
+                    .insert(CollisionLayers::from_bits(
+                        Layer::Enemy.to_bits(),
+                        Layer::all_bits(),
+                    ))
+                    .insert(PhysicMaterial {
+                        density: 2.0, // Value must be greater than 0.0
+                        ..Default::default()
+                    })
+                    .insert(EnemyLastFired(Timer::from_seconds(0.9, true)))
+                    .insert(Enemy {
+                        health: 6000,
+                        range: 200.0,
+                        update_destination_timer: Timer::from_seconds(2.0, true),
+                        move_speed: 15.0,
+                        weapon_damage: 60.0,
+                        weapon_splash_radius: 12.0,
+                        rotate_lerp: 0.1,
+                        big: true,
+                        ..Default::default()
+                    })
+                    .insert(OrbieEnemy)
+                    .insert(Alive)
+                    .with_children(|parent| {
+                        parent.spawn_scene(model_assets.unit2.clone());
+                    });
+            } else {
+                commands
+                    .spawn_bundle((
+                        Transform::from_xyz(spawn_point.x, spawn_point.y, spawn_point.z)
+                            .with_scale(Vec3::new(3.0, 3.0, 3.0)),
+                        GlobalTransform::default(),
+                    ))
+                    .insert(RigidBody::Dynamic)
+                    .insert(CollisionShape::Sphere { radius: 2.7 })
+                    .insert(CollisionLayers::from_bits(
+                        Layer::Enemy.to_bits(),
+                        Layer::all_bits(),
+                    ))
+                    .insert(PhysicMaterial {
+                        density: 1.0, // Value must be greater than 0.0
+                        ..Default::default()
+                    })
+                    .insert(EnemyLastFired(Timer::from_seconds(0.9, true)))
+                    .insert(Enemy {
+                        health: 5000,
+                        range: 180.0,
+                        update_destination_timer: Timer::from_seconds(2.0, true),
+                        move_speed: 25.0,
+                        weapon_damage: 30.0,
+                        weapon_splash_radius: 0.0,
+                        rotate_lerp: 0.3,
+                        big: true,
+                        ..Default::default()
+                    })
+                    .insert(LaserieEnemy)
+                    .insert(Alive)
+                    .with_children(|parent| {
+                        parent.spawn_scene(model_assets.unit1.clone());
+                    })
+                    .with_children(|parent| {
+                        parent.spawn_bundle(PolylineBundle {
+                            polyline: polylines.add(Polyline {
+                                vertices: vec![Vec3::ZERO, Vec3::ZERO],
+                            }),
+                            material: polyline_materials.add(PolylineMaterial {
+                                width: 90.0,
+                                color: Color::rgba(1.0, 0.0, 1.0, 0.9),
+                                perspective: true,
+                            }),
+                            visibility: Visibility { is_visible: true },
+                            ..Default::default()
+                        });
+                    })
+                    .insert(HasLaser);
+            }
+            if enemies_state.current_level == 1 {
+                //spawn_enemies_on_timer will set the duration back to 1 when the timer triggers
+                timer.0.set_duration(Duration::from_secs(7));
+            }
         }
     }
 }

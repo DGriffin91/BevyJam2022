@@ -153,6 +153,8 @@ fn menu_ui(
                         for mut screen_message in screen_messages.iter_mut() {
                             *screen_message = ScreenMessage::PressFire;
                         }
+                        window.set_cursor_lock_mode(true);
+                        window.set_cursor_visibility(false);
                     }
                 });
                 movement_settings.build_ui(ui, keys);
