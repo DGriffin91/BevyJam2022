@@ -14,7 +14,11 @@ impl Plugin for SplashScreenPlugin {
 #[derive(Component)]
 struct Overlay;
 
-fn show_splash_screen(mut commands: Commands, windows: Res<Windows>) {
+fn show_splash_screen(
+    mut commands: Commands,
+    windows: Res<Windows>,
+    asset_server: Res<AssetServer>,
+) {
     let window = windows.get_primary().unwrap();
 
     commands
@@ -29,11 +33,25 @@ fn show_splash_screen(mut commands: Commands, windows: Res<Windows>) {
             color: Color::BLACK.into(),
             ..Default::default()
         })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "LOADING",
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 40.0,
+                        color: Color::rgb(0.9, 0.9, 0.9),
+                    },
+                    Default::default(),
+                ),
+                ..Default::default()
+            });
+        })
         .insert(Overlay);
 }
 
 fn hide_splash_screen(mut commands: Commands, overlays: Query<Entity, With<Overlay>>) {
     for overlay in overlays.iter() {
-        commands.entity(overlay).despawn();
+        commands.entity(overlay).despawn_recursive();
     }
 }

@@ -72,7 +72,7 @@ fn startup_menu(
     let window = windows.get_primary_mut().unwrap();
 
     if window.is_focused() && !window.cursor_locked() {
-        egui::Window::new("GAME")
+        egui::Window::new("CONFLUENCE OF FUTILITY")
             .resizable(false)
             .collapsible(false)
             .current_pos([
