@@ -485,7 +485,7 @@ fn kill_enemy(
         }
 
         let orb_material_props = OrbProperties {
-            color_tint: Vec3::new(1.0, 0.9, 0.5),
+            color_tint: Vec3::new(1.0, 0.95, 0.8),
             alpha: 1.0,
             ..Default::default()
         };
@@ -507,8 +507,8 @@ fn kill_enemy(
             })
             .insert(Explosion {
                 progress: 0.0,
-                speed: 3.0,
-                scale: 0.033,
+                speed: 3.2,
+                scale: 0.08,
                 handle: orb_material,
             });
 
