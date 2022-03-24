@@ -2,7 +2,7 @@ use std::num::NonZeroU8;
 
 use bevy::{
     ecs::system::{lifetimeless::SRes, SystemParamItem},
-    pbr::MaterialPipeline,
+    pbr::{MaterialPipeline, SpecializedMaterial},
     prelude::*,
     reflect::TypeUuid,
     render::{
@@ -10,12 +10,14 @@ use bevy::{
         render_resource::{
             std140::{AsStd140, Std140},
             AddressMode, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
-            BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, Buffer,
-            BufferBindingType, BufferInitDescriptor, BufferSize, BufferUsages, FilterMode, Sampler,
-            SamplerBindingType, SamplerDescriptor, ShaderStages, TextureSampleType,
-            TextureViewDimension,
+            BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType,
+            BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer, BufferBindingType,
+            BufferInitDescriptor, BufferSize, BufferUsages, ColorTargetState, ColorWrites,
+            FilterMode, RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor,
+            ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension,
         },
         renderer::RenderDevice,
+        texture::BevyDefault,
     },
 };
 use bevy_egui::egui;
@@ -148,7 +150,37 @@ impl RenderAsset for OrbMaterial {
     }
 }
 
-impl Material for OrbMaterial {
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct OrbMaterialKey;
+
+impl SpecializedMaterial for OrbMaterial {
+    type Key = OrbMaterialKey;
+
+    fn key(_render_asset: &<Self as RenderAsset>::PreparedAsset) -> Self::Key {
+        OrbMaterialKey
+    }
+
+    fn specialize(_key: Self::Key, descriptor: &mut RenderPipelineDescriptor) {
+        if let Some(mut fragment) = descriptor.fragment.as_mut() {
+            fragment.targets = vec![ColorTargetState {
+                blend: Some(BlendState {
+                    color: BlendComponent {
+                        src_factor: BlendFactor::SrcAlpha,
+                        dst_factor: BlendFactor::One,
+                        operation: BlendOperation::Add,
+                    },
+                    alpha: BlendComponent {
+                        src_factor: BlendFactor::One,
+                        dst_factor: BlendFactor::One,
+                        operation: BlendOperation::Add,
+                    },
+                }),
+                write_mask: ColorWrites::ALL,
+                format: TextureFormat::bevy_default(),
+            }];
+        }
+    }
+
     fn fragment_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
         let r = Some(asset_server.load("shaders/orb_material.wgsl"));
         asset_server.watch_for_changes().unwrap();
