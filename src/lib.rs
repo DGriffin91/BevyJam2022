@@ -4,7 +4,7 @@ use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_kira_audio::AudioPlugin;
 use bevy_polyline::PolylinePlugin;
 use bevy_tweening::TweeningPlugin;
-use console::ConsolePlugin;
+//use console::ConsolePlugin;
 use enemies::EnemiesPlugin;
 use heron::{Gravity, PhysicsLayer, PhysicsPlugin};
 use player::PlayerPlugin;
@@ -13,7 +13,7 @@ use world::WorldPlugin;
 
 mod assets;
 mod audio;
-mod console;
+//mod console;
 mod enemies;
 mod player;
 mod ui;
@@ -33,7 +33,7 @@ impl Plugin for GamePlugin {
             .add_plugin(TweeningPlugin)
             // Game plugins
             .add_plugin(AssetsPlugin)
-            .add_plugin(ConsolePlugin)
+            //.add_plugin(ConsolePlugin) // Need 0.7 compatible version
             .add_plugin(EnemiesPlugin)
             .add_plugin(GameAudioPlugin)
             .add_plugin(PlayerPlugin)

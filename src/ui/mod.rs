@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 
 use self::{fps::FpsPlugin, hud::HudPlugin, menu::MenuPlugin, scoreboard::ScoreboardPlugin};
 
@@ -11,7 +12,8 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(MenuPlugin)
+        app.add_plugin(EguiPlugin)
+            .add_plugin(MenuPlugin)
             .add_plugin(HudPlugin)
             .add_plugin(FpsPlugin)
             .add_plugin(ScoreboardPlugin)

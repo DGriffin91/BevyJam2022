@@ -6,6 +6,7 @@ use bevy::{
     prelude::*,
     reflect::TypeUuid,
     render::{
+        mesh::MeshVertexBufferLayout,
         render_asset::{PrepareAssetError, RenderAsset, RenderAssets},
         render_resource::{
             std140::{AsStd140, Std140},
@@ -14,7 +15,8 @@ use bevy::{
             BlendComponent, BlendFactor, BlendOperation, BlendState, Buffer, BufferBindingType,
             BufferInitDescriptor, BufferSize, BufferUsages, ColorTargetState, ColorWrites,
             FilterMode, RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor,
-            ShaderStages, TextureFormat, TextureSampleType, TextureViewDimension,
+            ShaderStages, SpecializedMeshPipelineError, TextureFormat, TextureSampleType,
+            TextureViewDimension,
         },
         renderer::RenderDevice,
         texture::BevyDefault,
@@ -160,7 +162,12 @@ impl SpecializedMaterial for OrbMaterial {
         OrbMaterialKey
     }
 
-    fn specialize(_key: Self::Key, descriptor: &mut RenderPipelineDescriptor) {
+    fn specialize(
+        _pipeline: &MaterialPipeline<Self>,
+        descriptor: &mut RenderPipelineDescriptor,
+        _key: Self::Key,
+        _layout: &MeshVertexBufferLayout,
+    ) -> Result<(), SpecializedMeshPipelineError> {
         if let Some(mut fragment) = descriptor.fragment.as_mut() {
             fragment.targets = vec![ColorTargetState {
                 blend: Some(BlendState {
@@ -179,6 +186,7 @@ impl SpecializedMaterial for OrbMaterial {
                 format: TextureFormat::bevy_default(),
             }];
         }
+        Ok(())
     }
 
     fn fragment_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
