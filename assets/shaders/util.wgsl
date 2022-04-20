@@ -1,9 +1,13 @@
 fn get_light_id(index: u32) -> u32 {
-    // The index is correct but in cluster_light_index_lists we pack 4 u8s into a u32
-    // This means the index into cluster_light_index_lists is index / 4
-    let indices = cluster_light_index_lists.data[index >> 4u][(index >> 2u) & ((1u << 2u) - 1u)];
-    // And index % 4 gives the sub-index of the u8 within the u32 so we shift by 8 * sub-index
-    return (indices >> (8u * (index & ((1u << 2u) - 1u)))) & ((1u << 8u) - 1u);
+    #ifdef NO_STORAGE_BUFFERS_SUPPORT
+        // The index is correct but in cluster_light_index_lists we pack 4 u8s into a u32
+        // This means the index into cluster_light_index_lists is index / 4
+        let indices = cluster_light_index_lists.data[index >> 4u][(index >> 2u) & ((1u << 2u) - 1u)];
+        // And index % 4 gives the sub-index of the u8 within the u32 so we shift by 8 * sub-index
+        return (indices >> (8u * (index & ((1u << 2u) - 1u)))) & ((1u << 8u) - 1u);
+    #else
+        return cluster_light_index_lists.data[index];
+    #endif
 }
 
 fn fetch_point_shadow(light_id: u32, frag_position: vec4<f32>, surface_normal: vec3<f32>) -> f32 {

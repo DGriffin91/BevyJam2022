@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
     render::mesh::{Indices, VertexAttributeValues},
 };
-use bevy_asset_loader::{AssetKeys, DynamicAsset};
+use bevy_asset_loader::{DynamicAsset, DynamicAssets};
 use heron::{
     rapier_plugin::{
         nalgebra::Point3,
@@ -89,7 +89,7 @@ fn spawn_demo_cubes(
     }
 }
 
-pub fn set_textures_res(mut asset_keys: ResMut<AssetKeys>, high_res: bool) {
+pub fn set_textures_res(mut asset_keys: ResMut<DynamicAssets>, high_res: bool) {
     let sm = if high_res { "" } else { "sm/" };
     for s in [
         "large_ceiling_supports",

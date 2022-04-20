@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_asset_loader::AssetKeys;
+use bevy_asset_loader::DynamicAssets;
 use bevy_egui::{
     egui::{self, Align2, FontDefinitions, Pos2},
     EguiContext,
@@ -54,8 +54,9 @@ impl Plugin for MenuPlugin {
 pub fn setup_fonts(mut egui_context: ResMut<EguiContext>) {
     let mut fonts = FontDefinitions::default();
 
-    for (_text_style, (_family, size)) in fonts.family_and_size.iter_mut() {
-        *size = 25.0;
+    for (_text_style, data) in fonts.font_data.iter_mut() {
+        data.tweak.scale = 2.0;
+        //*size = 25.0;
     }
     egui_context.ctx_mut().set_fonts(fonts);
 }
@@ -65,7 +66,7 @@ fn startup_menu(
     mut windows: ResMut<Windows>,
     mut preferences: ResMut<GamePreferences>,
     mut egui_context: ResMut<EguiContext>,
-    asset_keys: ResMut<AssetKeys>,
+    asset_keys: ResMut<DynamicAssets>,
     mut movement_settings: ResMut<MovementSettings>,
     keys: Res<Input<KeyCode>>,
 ) {

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::app::{Events, ManualEventReader};
+use bevy::ecs::event::{Events, ManualEventReader};
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
 use bevy_egui::egui::Ui;
@@ -228,6 +228,9 @@ struct PlayerWeapon {
     secondary_fire_last_shot: f32,
 }
 
+#[derive(Component, Deref, DerefMut)]
+pub struct PolylineTimer(Timer);
+
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(
     mut commands: Commands,
@@ -282,7 +285,10 @@ fn setup_player(
             visibility: Visibility { is_visible: false },
             ..Default::default()
         })
-        .insert(Timer::new(Duration::from_secs_f32(2.0), false))
+        .insert(PolylineTimer(Timer::new(
+            Duration::from_secs_f32(2.0),
+            false,
+        )))
         .insert(PlayerPolyline);
 
     commands
@@ -298,7 +304,10 @@ fn setup_player(
             visibility: Visibility { is_visible: false },
             ..Default::default()
         })
-        .insert(Timer::new(Duration::from_secs_f32(2.0), false))
+        .insert(PolylineTimer(Timer::new(
+            Duration::from_secs_f32(2.0),
+            false,
+        )))
         .insert(PlayerPolylineSecondary);
 
     commands.spawn_bundle(ButtonBundle {
@@ -396,9 +405,9 @@ fn player_look(
     windows: Res<Windows>,
     mut state: ResMut<InputState>,
     motion: Res<Events<MouseMotion>>,
-    mut query: QuerySet<(
-        QueryState<&mut Transform, With<Player>>,
-        QueryState<&mut Transform, With<PlayerCam>>,
+    mut query: ParamSet<(
+        Query<&mut Transform, With<Player>>,
+        Query<&mut Transform, With<PlayerCam>>,
     )>,
 ) {
     let window = windows.get_primary().unwrap();
@@ -418,12 +427,12 @@ fn player_look(
         state.yaw = yaw;
 
         // Update player yaw
-        for mut transform in query.q0().iter_mut() {
+        for mut transform in query.p0().iter_mut() {
             transform.rotation = Quat::from_axis_angle(Vec3::Y, state.yaw);
         }
 
         // Update camera pitch
-        for mut transform in query.q1().iter_mut() {
+        for mut transform in query.p1().iter_mut() {
             transform.rotation = Quat::from_axis_angle(Vec3::X, state.pitch);
         }
     }
@@ -445,7 +454,7 @@ fn player_fire(
             &mut Handle<Polyline>,
             &mut Visibility,
             &Handle<PolylineMaterial>,
-            &mut Timer,
+            &mut PolylineTimer,
         ),
         (Without<PlayerPolylineSecondary>, With<PlayerPolyline>),
     >,
@@ -454,7 +463,7 @@ fn player_fire(
             &mut Handle<Polyline>,
             &mut Visibility,
             &Handle<PolylineMaterial>,
-            &mut Timer,
+            &mut PolylineTimer,
         ),
         (With<PlayerPolylineSecondary>, Without<PlayerPolyline>),
     >,
@@ -593,7 +602,7 @@ fn update_player_polylines(
             &mut Handle<Polyline>,
             &mut Visibility,
             &Handle<PolylineMaterial>,
-            &mut Timer,
+            &mut PolylineTimer,
         ),
         With<PlayerPolyline>,
     >,
@@ -634,7 +643,7 @@ fn update_secondary_player_polylines(
             &mut Handle<Polyline>,
             &mut Visibility,
             &Handle<PolylineMaterial>,
-            &mut Timer,
+            &mut PolylineTimer,
         ),
         With<PlayerPolylineSecondary>,
     >,

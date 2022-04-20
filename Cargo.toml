@@ -5,7 +5,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bevy = { version = "0.6", default-features = false, features = [
+bevy = { version = "0.7", default-features = false, features = [
   "jpeg",
   "bevy_gilrs",
   "bevy_winit",
@@ -16,14 +16,14 @@ bevy = { version = "0.6", default-features = false, features = [
   "x11",
   "filesystem_watcher",
 ] }
-bevy_asset_loader = "0.9"
+bevy_asset_loader = "0.10"
 bevy_console = "0.3"
-bevy_egui = "0.11"
-bevy_kira_audio = "0.8"
-bevy_polyline = "0.1"
-bevy_tweening = "0.3"
+bevy_egui = "0.13"
+bevy_kira_audio = "0.9"
+bevy_polyline = {git = "https://github.com/DGriffin91/bevy_polyline", branch = "update-bevy-to-0.7.0"}
+bevy_tweening = "0.4"
 bitflags = "1.3"
-heron = { version = "2.0", features = ["3d"] }
+heron = { version = "3.0", features = ["3d"] }
 pathfinding = "3.0"
 rand = "0.8"
 splines = { git = "https://github.com/phaazon/splines", features = [
